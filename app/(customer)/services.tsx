@@ -27,8 +27,8 @@ export default function CustomerServicesScreen() {
 
   const loadFeatured = useCallback(async (manualRetry = false) => {
     setErrorMessage(null);
-    if (featured.length === 0) setLoading(true);
-    else setRefreshing(true);
+    setLoading(true);
+    setRefreshing(true);
 
     try {
       const { data, error } = await supabase.rpc("get_active_featured_providers", {
@@ -59,7 +59,7 @@ export default function CustomerServicesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [featured.length]);
+  }, []);
 
   useEffect(() => {
     let active = true;
