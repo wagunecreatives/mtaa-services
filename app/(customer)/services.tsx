@@ -25,7 +25,7 @@ export default function CustomerServicesScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showingCached, setShowingCached] = useState(false);
 
-  const loadFeatured = useCallback(async (manualRetry = false) => {
+  const loadFeatured = useCallback(async () => {
     setErrorMessage(null);
     setLoading(true);
     setRefreshing(true);
@@ -52,9 +52,6 @@ export default function CustomerServicesScreen() {
           ? "Connection is weak or unavailable. Check your internet and retry."
           : "We couldn't refresh featured providers. Please retry."
       );
-      if (manualRetry) {
-        // Keep previously loaded/cached results visible while retrying.
-      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -97,7 +94,7 @@ export default function CustomerServicesScreen() {
       {errorMessage ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <TouchableOpacity onPress={() => void loadFeatured(true)} disabled={refreshing}>
+          <TouchableOpacity onPress={() => void loadFeatured()} disabled={refreshing}>
             <Text style={styles.retry}>{refreshing ? "Retrying…" : "Retry connection"}</Text>
           </TouchableOpacity>
         </View>
