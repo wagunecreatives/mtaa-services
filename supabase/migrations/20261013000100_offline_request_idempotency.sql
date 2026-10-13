@@ -86,7 +86,7 @@ begin
       and sr.status in ('open','matching','responses_received')
       and sr.created_at>now()-interval '15 minutes'
       and lower(coalesce(sr.area_name,''))=lower(coalesce(v_area,''))
-      and regexp_replace(lower(btrim(sr.description)),'\\s+',' ','g')=regexp_replace(lower(v_description),'\\s+',' ','g')
+      and regexp_replace(lower(btrim(sr.description)),'\s+',' ','g')=regexp_replace(lower(v_description),'\s+',' ','g')
   ) then
     raise exception 'A similar request was just submitted. Check your requests before trying again.' using errcode='P0001';
   end if;
