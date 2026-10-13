@@ -80,13 +80,6 @@ async function persistDraft(value: PersistedRequestDraft): Promise<void> {
   await SecureStore.setItemAsync(STORAGE_KEY, raw);
 }
 
-async function clearPersistedDraft(): Promise<void> {
-  if (Platform.OS === "web") {
-    if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY);
-    return;
-  }
-  await SecureStore.deleteItemAsync(STORAGE_KEY);
-}
 
 interface RequestDraftContextValue {
   draft: RequestDraft;
@@ -130,11 +123,10 @@ export function RequestDraftProvider({ children }: { children: ReactNode }) {
     setDraft((previous) => ({ ...previous, ...patch }));
 
   const reset = () => {
+    // Let the persistence effect replace the old draft atomically with a fresh one.
+    // Deleting and writing concurrently could otherwise lose a new draft on slow storage.
     setDraft(emptyDraft);
     setSubmissionId(createSubmissionId());
-    void clearPersistedDraft().catch((error) => {
-      console.warn("Could not clear persisted request draft", error);
-    });
   };
 
   if (!ready) {
