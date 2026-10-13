@@ -1,0 +1,376 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/package-lock.json b/package-lock.json[m
+[1mindex 40db460..987e583 100644[m
+[1m--- a/package-lock.json[m
+[1m+++ b/package-lock.json[m
+[36m@@ -8,10 +8,10 @@[m
+       "name": "mtaa-services",[m
+       "version": "1.0.0",[m
+       "dependencies": {[m
+[31m-        "@expo/ui": "~57.0.22",[m
+[32m+[m[32m        "@expo/ui": "~57.0.23",[m
+         "@hookform/resolvers": "^5.9.1",[m
+         "@supabase/supabase-js": "^2.117.3",[m
+[31m-        "expo": "~57.0.27",[m
+[32m+[m[32m        "expo": "~57.0.28",[m
+         "expo-constants": "~57.0.21",[m
+         "expo-device": "~57.0.2",[m
+         "expo-font": "~57.0.4",[m
+[36m@@ -19,11 +19,11 @@[m
+         "expo-image": "~57.0.5",[m
+         "expo-image-picker": "~57.0.20",[m
+         "expo-linking": "~57.0.12",[m
+[31m-        "expo-location": "~57.0.20",[m
+[32m+[m[32m        "expo-location": "~57.0.21",[m
+         "expo-notifications": "~57.0.22",[m
+[31m-        "expo-router": "~57.0.25",[m
+[32m+[m[32m        "expo-router": "~57.0.26",[m
+         "expo-secure-store": "~57.0.4",[m
+[31m-        "expo-splash-screen": "~57.0.9",[m
+[32m+[m[32m        "expo-splash-screen": "~57.0.10",[m
+         "expo-status-bar": "~57.0.1",[m
+         "expo-symbols": "~57.0.3",[m
+         "expo-system-ui": "~57.0.4",[m
+[36m@@ -1575,9 +1575,9 @@[m
+       "license": "MIT"[m
+     },[m
+     "node_modules/@expo/fingerprint": {[m
+[31m-      "version": "0.20.13",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/fingerprint/-/fingerprint-0.20.13.tgz",[m
+[31m-      "integrity": "sha512-h1x+w+JpNRu88a/5SMZRzJs9YDGR/f7R8ApCr7OdenhqmJ00hFxQMzvxajDLL+1P2Y2g/ND0xksusqvBqWSW5Q==",[m
+[32m+[m[32m      "version": "0.20.14",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/fingerprint/-/fingerprint-0.20.14.tgz",[m
+[32m+[m[32m      "integrity": "sha512-7sihStGX1ZepJBNbYgeQY7cU2GQ+PSkSROe3g7JOQqnT6OOuX0rXKY0ZNoVnlB2Y/H5FWnnJ6QrPlK3fNg9+bQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/env": "^2.4.3",[m
+[36m@@ -1636,12 +1636,12 @@[m
+       }[m
+     },[m
+     "node_modules/@expo/inline-modules": {[m
+[31m-      "version": "0.1.7",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/inline-modules/-/inline-modules-0.1.7.tgz",[m
+[31m-      "integrity": "sha512-Bz/khd1gIJqDkje7t5ejD5e9jFbm4xEJzWSwRKadRo6gruepbw1xJ3Eb+e58OS8fY1ZNQYjzZbspnuph67sN0g==",[m
+[32m+[m[32m      "version": "0.1.8",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/inline-modules/-/inline-modules-0.1.8.tgz",[m
+[32m+[m[32m      "integrity": "sha512-5OCHzv/VHVuam9UT6/yeArtUnmkp5VdAH6k4JwdRzK/34ukzdjQK7B9n71fiswZKtm2MmZlPuy4hJo2Ao8CZNw==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "@expo/config-plugins": "~57.0.9"[m
+[32m+[m[32m        "@expo/config-plugins": "~57.0.10"[m
+       }[m
+     },[m
+     "node_modules/@expo/json-file": {[m
+[36m@@ -1655,12 +1655,12 @@[m
+       }[m
+     },[m
+     "node_modules/@expo/local-build-cache-provider": {[m
+[31m-      "version": "57.0.8",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/local-build-cache-provider/-/local-build-cache-provider-57.0.8.tgz",[m
+[31m-      "integrity": "sha512-SEdE0pAQrr90bRh3MNR0ZuwoIBw390cYdFgbn7Vk0Mtm9EHaBfP7kYj+2hXnXZJgOEm3/JMtfoD3rV7rWA9FGg==",[m
+[32m+[m[32m      "version": "57.0.9",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/local-build-cache-provider/-/local-build-cache-provider-57.0.9.tgz",[m
+[32m+[m[32m      "integrity": "sha512-hox13/K/dqvKG7StLYs9nwyNR/mJ5ieAkNN8jTee6liMPyUQTfpzgticRyWnVxj49Fr8PpTaQab/ArYVEBJOcQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "@expo/config": "~57.0.9",[m
+[32m+[m[32m        "@expo/config": "~57.0.10",[m
+         "chalk": "^4.1.2"[m
+       }[m
+     },[m
+[36m@@ -1850,9 +1850,9 @@[m
+       }[m
+     },[m
+     "node_modules/@expo/prebuild-config": {[m
+[31m-      "version": "57.0.17",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/prebuild-config/-/prebuild-config-57.0.17.tgz",[m
+[31m-      "integrity": "sha512-PnPw4QT8afAA1RqTktK89+JpyJz46cZsZx6gEAe6QCHgOHc7dlA0rXlOFy0xbHpBnYT8x7wl6vTz2ydT99gykw==",[m
+[32m+[m[32m      "version": "57.0.18",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/prebuild-config/-/prebuild-config-57.0.18.tgz",[m
+[32m+[m[32m      "integrity": "sha512-q/Jijt1H2GT1TlD+C9UOLmErjujjieUs+Rpdo6+L5IBRaW+gXJY0oFqlpyKvOwziQIv4AYL7vZFn6I+OyRgRXQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/config": "~57.0.10",[m
+[36m@@ -1862,7 +1862,7 @@[m
+         "@expo/json-file": "^11.0.1",[m
+         "@react-native/normalize-colors": "0.86.3",[m
+         "debug": "^4.3.1",[m
+[31m-        "expo-modules-autolinking": "~57.0.14",[m
+[32m+[m[32m        "expo-modules-autolinking": "~57.0.15",[m
+         "resolve-from": "^5.0.0",[m
+         "semver": "^7.6.0"[m
+       }[m
+[36m@@ -1929,9 +1929,9 @@[m
+       "license": "MIT"[m
+     },[m
+     "node_modules/@expo/ui": {[m
+[31m-      "version": "57.0.22",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/ui/-/ui-57.0.22.tgz",[m
+[31m-      "integrity": "sha512-v0p397fI7XhYBt+O5Q4MCWKB1lwR8cA2xjoQbc/V6W+EmP9qU1sHh0eQ7QHdeE/lyNjWW4wIut0/H/8OjcHo3w==",[m
+[32m+[m[32m      "version": "57.0.23",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/ui/-/ui-57.0.23.tgz",[m
+[32m+[m[32m      "integrity": "sha512-5QW1uzs8cGBlBKQvzNLDmmAeTCiJn4HVCYC2tddyOtXnXsUKGY7Rvgw6otr9Q2rPcOY5mC34wJIspViamvptww==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "sf-symbols-typescript": "^2.1.0",[m
+[36m@@ -4018,9 +4018,9 @@[m
+       }[m
+     },[m
+     "node_modules/babel-plugin-react-native-web": {[m
+[31m-      "version": "0.21.3",[m
+[31m-      "resolved": "https://registry.npmjs.org/babel-plugin-react-native-web/-/babel-plugin-react-native-web-0.21.3.tgz",[m
+[31m-      "integrity": "sha512-e4fG8NbyRvk5GwU/7G2U9WxzPYtpC4IQN28AyRDzKE0kvywgohq8vT2x0/xBfg8a0RfSkXLlHAtUAGlSy3VhAw==",[m
+[32m+[m[32m      "version": "0.21.4",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/babel-plugin-react-native-web/-/babel-plugin-react-native-web-0.21.4.tgz",[m
+[32m+[m[32m      "integrity": "sha512-FSclsDTGi5EcvpbW3TM7s8GLWwQqo5wI9zQqJr2m0IoJRenSkp1+bVvdeZXTNznI5Ms9Bry7DLBR+C5Shb9gtw==",[m
+       "license": "MIT"[m
+     },[m
+     "node_modules/babel-plugin-syntax-hermes-parser": {[m
+[36m@@ -4042,9 +4042,9 @@[m
+       }[m
+     },[m
+     "node_modules/babel-preset-expo": {[m
+[31m-      "version": "57.0.14",[m
+[31m-      "resolved": "https://registry.npmjs.org/babel-preset-expo/-/babel-preset-expo-57.0.14.tgz",[m
+[31m-      "integrity": "sha512-ALhPgXS0pvMcuORYh3THz4qYhQlOsRIw6FB+AbawM81tvP9V9pZpiK+Au9wihyYIb/Hdv2Z7Zwud4tFXF1ysJQ==",[m
+[32m+[m[32m      "version": "57.0.15",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/babel-preset-expo/-/babel-preset-expo-57.0.15.tgz",[m
+[32m+[m[32m      "integrity": "sha512-GIJZeeBlDAO753yBaslD5wkElbB1//D0oRanc7ncahXDD0cBizIznJDNm1cKgVxcMaVZFacdozSa8jFHV1YJfQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@babel/generator": "^7.20.5",[m
+[36m@@ -4093,7 +4093,7 @@[m
+       "peerDependencies": {[m
+         "@babel/runtime": "^7.20.0",[m
+         "expo": "*",[m
+[31m-        "expo-widgets": "^57.0.23",[m
+[32m+[m[32m        "expo-widgets": "^57.0.24",[m
+         "react-refresh": ">=0.14.0 <1.0.0"[m
+       },[m
+       "peerDependenciesMeta": {[m
+[36m@@ -5745,31 +5745,31 @@[m
+       }[m
+     },[m
+     "node_modules/expo": {[m
+[31m-      "version": "57.0.27",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo/-/expo-57.0.27.tgz",[m
+[31m-      "integrity": "sha512-Jc3nByHsmzjakvIrqV3/3viVj+jFw1OCfMc+WpClemwL3/hSrS7ktkVCACSTI7/j+1uH+eHmBJwe1kujDLMnbQ==",[m
+[32m+[m[32m      "version": "57.0.28",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo/-/expo-57.0.28.tgz",[m
+[32m+[m[32m      "integrity": "sha512-Bh9PgT1wLdcSOi8uXvUtHYh12zz9kx3zjD8Pm7O8EAsZW0W42dVog3/UhY2qJnlOkSDpTQJTnX8jsi2J5xn2OA==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@babel/runtime": "^7.20.0",[m
+[31m-        "@expo/cli": "^57.0.28",[m
+[32m+[m[32m        "@expo/cli": "^57.0.29",[m
+         "@expo/config": "~57.0.10",[m
+         "@expo/config-plugins": "~57.0.10",[m
+         "@expo/devtools": "~57.0.1",[m
+         "@expo/dom-webview": "~57.0.1",[m
+[31m-        "@expo/fingerprint": "^0.20.13",[m
+[31m-        "@expo/local-build-cache-provider": "^57.0.8",[m
+[32m+[m[32m        "@expo/fingerprint": "^0.20.14",[m
+[32m+[m[32m        "@expo/local-build-cache-provider": "^57.0.9",[m
+         "@expo/log-box": "^57.0.4",[m
+         "@expo/metro": "~56.0.2",[m
+         "@expo/metro-config": "~57.0.13",[m
+         "@ungap/structured-clone": "^1.3.0",[m
+[31m-        "babel-preset-expo": "~57.0.14",[m
+[32m+[m[32m        "babel-preset-expo": "~57.0.15",[m
+         "expo-asset": "~57.0.19",[m
+         "expo-constants": "~57.0.21",[m
+         "expo-file-system": "~57.0.7",[m
+         "expo-font": "~57.0.4",[m
+         "expo-keep-awake": "~57.0.2",[m
+[31m-        "expo-modules-autolinking": "~57.0.14",[m
+[31m-        "expo-modules-core": "~57.0.21",[m
+[32m+[m[32m        "expo-modules-autolinking": "~57.0.15",[m
+[32m+[m[32m        "expo-modules-core": "~57.0.22",[m
+         "pretty-format": "^29.7.0",[m
+         "react-refresh": "^0.14.2",[m
+         "whatwg-url-minimum": "^0.1.2"[m
+[36m@@ -5956,21 +5956,21 @@[m
+       }[m
+     },[m
+     "node_modules/expo-location": {[m
+[31m-      "version": "57.0.20",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-location/-/expo-location-57.0.20.tgz",[m
+[31m-      "integrity": "sha512-E9cr7A5eQS91bm3McMx3FiWy7SCorVTPLq9gLFFW+7dfuSqQp5FLNBZQ6NFJaS8tVhCyl2WyKMFh0TAo/+7K9Q==",[m
+[32m+[m[32m      "version": "57.0.21",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-location/-/expo-location-57.0.21.tgz",[m
+[32m+[m[32m      "integrity": "sha512-up1e2Dqo4vzhyqzVB9ssRoP3p+VlIU6wJBHqipBenCijJYwnxAJjYv4nlBN0jRGk+4CixufCIkE9y2ZLH6594g==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "@expo/image-utils": "^0.11.5"[m
+[32m+[m[32m        "@expo/image-utils": "^0.11.6"[m
+       },[m
+       "peerDependencies": {[m
+         "expo": "*"[m
+       }[m
+     },[m
+     "node_modules/expo-modules-autolinking": {[m
+[31m-      "version": "57.0.14",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-modules-autolinking/-/expo-modules-autolinking-57.0.14.tgz",[m
+[31m-      "integrity": "sha512-dWql3NU2tvgfwkdZY3u9Sy3iWRA4IGDk91aOGZAJm3ZqudFxDRzAxlh8oQCVQ81Z+U9VmlUXw/4P9CbL33Ty0A==",[m
+[32m+[m[32m      "version": "57.0.15",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-modules-autolinking/-/expo-modules-autolinking-57.0.15.tgz",[m
+[32m+[m[32m      "integrity": "sha512-TY7Sy7MaIBFNMTTsmNtrkdyFwG3abE4gU2WJ6B4Qh9zXOMhtghHvVYTPh9bujHOY/2bscj8dOTqXnZ8iTVtwmg==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/require-utils": "^57.0.6",[m
+[36m@@ -5983,13 +5983,13 @@[m
+       }[m
+     },[m
+     "node_modules/expo-modules-core": {[m
+[31m-      "version": "57.0.21",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-modules-core/-/expo-modules-core-57.0.21.tgz",[m
+[31m-      "integrity": "sha512-g0pf9/tQ6IdJWCzr6PDrEiYT8mTaOhMRnXm3T2XtSzJJaNYgnyyDonkkPN1wd2+PqojIBPhytqqzeLxjM5y/Wg==",[m
+[32m+[m[32m      "version": "57.0.22",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-modules-core/-/expo-modules-core-57.0.22.tgz",[m
+[32m+[m[32m      "integrity": "sha512-IQTSHU690fleLZ6b36OCqt04KFStxA/k7El2vweOWhlFZ58hpNSQMK2Fosc1nIvlOnqqVRDcTAq+prJEOHLmBg==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/expo-modules-macros-plugin": "0.6.1",[m
+[31m-        "expo-modules-jsi": "~57.1.1",[m
+[32m+[m[32m        "expo-modules-jsi": "~57.1.2",[m
+         "invariant": "^2.2.4"[m
+       },[m
+       "peerDependencies": {[m
+[36m@@ -6004,9 +6004,9 @@[m
+       }[m
+     },[m
+     "node_modules/expo-modules-jsi": {[m
+[31m-      "version": "57.1.1",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-modules-jsi/-/expo-modules-jsi-57.1.1.tgz",[m
+[31m-      "integrity": "sha512-ssnwz3ZuIgCbZj5A3J6NlhQrXZojg+BjkeWrOWqVJhyMHlV/A/cRT7s986chKku97BFt6ucmDu6/BCzrV45Wcw==",[m
+[32m+[m[32m      "version": "57.1.2",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-modules-jsi/-/expo-modules-jsi-57.1.2.tgz",[m
+[32m+[m[32m      "integrity": "sha512-DYhBwO0fqcKIUma4jF16zRDP/m6ZbawEZbo4eX3gdekREIFqrrz8HKWXydgNUqOyOQcUkdrkZatxi2I9+V6E8g==",[m
+       "license": "MIT",[m
+       "peerDependencies": {[m
+         "react-native": "*"[m
+[36m@@ -6031,15 +6031,15 @@[m
+       }[m
+     },[m
+     "node_modules/expo-router": {[m
+[31m-      "version": "57.0.25",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-router/-/expo-router-57.0.25.tgz",[m
+[31m-      "integrity": "sha512-S/xWUGeVqMozG8gFJT0CHOVErZEbQnsAEAqlBIvHJSUZPH0hBcxy2kduUrV7ZDLNI4xCPIlOJ4SI29X/1z/hxw==",[m
+[32m+[m[32m      "version": "57.0.26",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-router/-/expo-router-57.0.26.tgz",[m
+[32m+[m[32m      "integrity": "sha512-iSF+LEbbvGkYGA2j8qWvF1woxrA7EWHZF+SNdTPR7dmi6myPOJsDGdwfWlXA74Gns8T7AuyfuDsxIsqEJ45BhQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/log-box": "^57.0.4",[m
+         "@expo/metro-runtime": "^57.0.16",[m
+         "@expo/schema-utils": "^57.0.2",[m
+[31m-        "@expo/ui": "^57.0.22",[m
+[32m+[m[32m        "@expo/ui": "^57.0.23",[m
+         "@radix-ui/react-slot": "^1.2.0",[m
+         "@radix-ui/react-tabs": "^1.1.12",[m
+         "@react-native-masked-view/masked-view": "^0.3.2",[m
+[36m@@ -6256,13 +6256,13 @@[m
+       }[m
+     },[m
+     "node_modules/expo-splash-screen": {[m
+[31m-      "version": "57.0.9",[m
+[31m-      "resolved": "https://registry.npmjs.org/expo-splash-screen/-/expo-splash-screen-57.0.9.tgz",[m
+[31m-      "integrity": "sha512-7cKDn7uBwg0RkcmY015/5j9st4msWJ4zQiPmQdVZoppW3cFSbv05n7xhM6CjUU466Tx4VRTqDF21HuIHkmnEtA==",[m
+[32m+[m[32m      "version": "57.0.10",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/expo-splash-screen/-/expo-splash-screen-57.0.10.tgz",[m
+[32m+[m[32m      "integrity": "sha512-W7++tMiyVMviWPTvaTXKpcOwwu5SbriwA2n0ewEhC+ic1LFaUNTUXiIXr95MVMSHaLRgtIG9dGyCTCb+NkekkA==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "@expo/config-plugins": "~57.0.9",[m
+[31m-        "@expo/image-utils": "^0.11.5",[m
+[32m+[m[32m        "@expo/config-plugins": "~57.0.10",[m
+[32m+[m[32m        "@expo/image-utils": "^0.11.6",[m
+         "xml2js": "0.6.0"[m
+       },[m
+       "peerDependencies": {[m
+[36m@@ -6327,9 +6327,9 @@[m
+       }[m
+     },[m
+     "node_modules/expo/node_modules/@expo/cli": {[m
+[31m-      "version": "57.0.28",[m
+[31m-      "resolved": "https://registry.npmjs.org/@expo/cli/-/cli-57.0.28.tgz",[m
+[31m-      "integrity": "sha512-4969gk/B2JyP3kAv2ftpwU1f9dLG2j9TsQuYCTTjfnyRx0O49Jwu1O1mie2c3HmKXbwfNA6QTS+3i3sNetMTag==",[m
+[32m+[m[32m      "version": "57.0.29",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@expo/cli/-/cli-57.0.29.tgz",[m
+[32m+[m[32m      "integrity": "sha512-OBmtg+74j6dEEQjKTgRDjQBvLSkKyP2cDTuGIrJTdgG4gZ1HCEBZj18Kyk9UfdYRXgJdixSVAQMCZK6/Q6l2QQ==",[m
+       "license": "MIT",[m
+       "dependencies": {[m
+         "@expo/code-signing-certificates": "^0.0.6",[m
+[36m@@ -6338,7 +6338,7 @@[m
+         "@expo/devcert": "^1.2.1",[m
+         "@expo/env": "~2.4.3",[m
+         "@expo/image-utils": "^0.11.6",[m
+[31m-        "@expo/inline-modules": "^0.1.7",[m
+[32m+[m[32m        "@expo/inline-modules": "^0.1.8",[m
+         "@expo/json-file": "^11.0.1",[m
+         "@expo/log-box": "^57.0.4",[m
+         "@expo/metro": "~56.0.2",[m
+[36m@@ -6347,7 +6347,7 @@[m
+         "@expo/osascript": "^2.7.1",[m
+         "@expo/package-manager": "^1.13.1",[m
+         "@expo/plist": "^0.8.1",[m
+[31m-        "@expo/prebuild-config": "^57.0.17",[m
+[32m+[m[32m        "@expo/prebuild-config": "^57.0.18",[m
+         "@expo/require-utils": "^57.0.6",[m
+         "@expo/router-server": "^57.0.12",[m
+         "@expo/schema-utils": "^57.0.2",[m
+[36m@@ -9946,9 +9946,9 @@[m
+       "license": "MIT-0"[m
+     },[m
+     "node_modules/postcss": {[m
+[31m-      "version": "8.5.29",[m
+[31m-      "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.29.tgz",[m
+[31m-      "integrity": "sha512-49cGhUbXj8Qenv0iTMxA1cFBzxXoctpC9Ujd77t1WcbJIr6nF/eI7g/8MgxrYldFRuAXvja7xQRwavoW7kgrxQ==",[m
+[32m+[m[32m      "version": "8.5.30",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.30.tgz",[m
+[32m+[m[32m      "integrity": "sha512-zkd+e9S1AQHhmaBKye9zlFHWjOwVgqXl1q3ECYy8561K7qxR2cREf/STLskulBFd78k6AOFeA+ff1TtEzk9bAA==",[m
+       "funding": [[m
+         {[m
+           "type": "opencollective",[m
+[36m@@ -9965,7 +9965,7 @@[m
+       ],[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "nanoid": "^3.3.19",[m
+[32m+[m[32m        "nanoid": "^3.3.20",[m
+         "picocolors": "^1.1.1",[m
+         "source-map-js": "^1.2.2"[m
+       },[m
+[1mdiff --git a/package.json b/package.json[m
+[1mindex 6b45c4a..1df3dec 100644[m
+[1m--- a/package.json[m
+[1m+++ b/package.json[m
+[36m@@ -3,10 +3,10 @@[m
+   "main": "expo-router/entry",[m
+   "version": "1.0.0",[m
+   "dependencies": {[m
+[31m-    "@expo/ui": "~57.0.22",[m
+[32m+[m[32m    "@expo/ui": "~57.0.23",[m
+     "@hookform/resolvers": "^5.9.1",[m
+     "@supabase/supabase-js": "^2.117.3",[m
+[31m-    "expo": "~57.0.27",[m
+[32m+[m[32m    "expo": "~57.0.28",[m
+     "expo-constants": "~57.0.21",[m
+     "expo-device": "~57.0.2",[m
+     "expo-font": "~57.0.4",[m
+[36m@@ -14,11 +14,11 @@[m
+     "expo-image": "~57.0.5",[m
+     "expo-image-picker": "~57.0.20",[m
+     "expo-linking": "~57.0.12",[m
+[31m-    "expo-location": "~57.0.20",[m
+[32m+[m[32m    "expo-location": "~57.0.21",[m
+     "expo-notifications": "~57.0.22",[m
+[31m-    "expo-router": "~57.0.25",[m
+[32m+[m[32m    "expo-router": "~57.0.26",[m
+     "expo-secure-store": "~57.0.4",[m
+[31m-    "expo-splash-screen": "~57.0.9",[m
+[32m+[m[32m    "expo-splash-screen": "~57.0.10",[m
+     "expo-status-bar": "~57.0.1",[m
+     "expo-symbols": "~57.0.3",[m
+     "expo-system-ui": "~57.0.4",[m

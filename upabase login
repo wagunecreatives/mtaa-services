@@ -1,0 +1,6 @@
+warning: in the working copy of 'app/(admin)/index.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(customer)/requests.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(provider)/jobs.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(provider)/leads.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(provider)/settings.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tsconfig.json', LF will be replaced by CRLF the next time Git touches it

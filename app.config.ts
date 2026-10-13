@@ -1,4 +1,4 @@
-import { ExpoConfig, ConfigContext } from 'expo/config';
+import { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -9,13 +9,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/images/icon.png',
   scheme: 'mtaaservices',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
+  // newArchEnabled: true,  <-- REMOVED (not needed in SDK 55+)
 
-  splash: {
-    image: './assets/images/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#208AEF',
-  },
+  // splash: { ... },  <-- REMOVED (moved to expo-splash-screen plugin)
 
   ios: {
     supportsTablet: true,
@@ -31,6 +27,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         'MTAA SERVICES needs access to your photos.',
       NSPhotoLibraryAddUsageDescription:
         'MTAA SERVICES needs permission to save photos.',
+      CFBundleURLTypes: [
+        {
+          CFBundleURLSchemes: ['mtaaservices'],
+        },
+      ],
     },
   },
 
@@ -52,11 +53,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'VIBRATE',
     ],
     predictiveBackGestureEnabled: false,
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [{ scheme: 'mtaaservices' }],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
 
   web: {
     bundler: 'metro',
-    output: 'static',
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
 
@@ -70,6 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: '#208AEF',
         image: './assets/images/splash-icon.png',
         imageWidth: 76,
+        resizeMode: 'contain',
       },
     ],
     [
@@ -99,12 +109,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
   },
 
- extra: {
-  router: {
-    origin: false,
+  extra: {
+    router: {
+      origin: false,
+    },
+    eas: {
+      projectId: '4057c7be-debd-4217-a993-656ded4c441b',
+    },
   },
-  eas: {
-    projectId: "4057c7be-debd-4217-a993-656ded4c441b",
-  },
-},
 });
