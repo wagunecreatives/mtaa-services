@@ -5,7 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Platform } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import { Colors } from "../constants/Colors";
 import * as SecureStore from "expo-secure-store";
 
 export type Urgency = "now" | "today" | "this_week";
@@ -136,6 +137,15 @@ export function RequestDraftProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  if (!ready) {
+    return (
+      <View style={styles.restoreScreen}>
+        <ActivityIndicator color={Colors.primary} />
+        <Text style={styles.restoreText}>Restoring your saved request…</Text>
+      </View>
+    );
+  }
+
   return (
     <RequestDraftContext.Provider
       value={{ draft, submissionId, ready, update, reset }}
@@ -152,3 +162,9 @@ export function useRequestDraft() {
   }
   return context;
 }
+
+
+const styles = StyleSheet.create({
+  restoreScreen: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: Colors.background, gap: 12 },
+  restoreText: { color: Colors.textSecondary, fontSize: 14, textAlign: "center" },
+});
