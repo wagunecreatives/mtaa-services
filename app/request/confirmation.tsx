@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 6, marginBottom: 20, fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
   notice: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, marginBottom: 12, borderRadius: 12, backgroundColor: Colors.backgroundSecondary },
   noticeText: { color: Colors.textSecondary, fontSize: 14 },
-  errorBox: { padding: 14, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: Colors.danger ?? Colors.border, backgroundColor: Colors.backgroundSecondary, gap: 5 },
+  errorBox: { padding: 14, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: Colors.error, backgroundColor: Colors.backgroundSecondary, gap: 5 },
   errorTitle: { fontSize: 15, fontWeight: "800", color: Colors.text },
   errorText: { fontSize: 14, lineHeight: 20, color: Colors.text },
   errorHint: { fontSize: 12, lineHeight: 18, color: Colors.textSecondary },
