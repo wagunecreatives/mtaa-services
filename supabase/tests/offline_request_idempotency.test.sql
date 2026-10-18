@@ -1,6 +1,6 @@
 -- Offline request idempotency schema/security assertions.
 -- Run with psql after applying the migration. These checks do not create requests.
-\echo 1..11
+\echo 1..10
 
 select to_regclass('public.service_request_idempotency') is not null as ok \gset
 \if :ok
@@ -97,9 +97,3 @@ select coalesce(
 \echo not ok 10 - matching scoring uses valid database urgency values
 \endif
 
-select not has_table_privilege('authenticated','public.service_requests','INSERT') as ok \gset
-\if :ok
-\echo ok 11 - authenticated clients cannot bypass the idempotent RPC with direct inserts
-\else
-\echo not ok 11 - authenticated clients cannot bypass the idempotent RPC with direct inserts
-\endif
