@@ -1,6 +1,6 @@
 -- Offline request idempotency schema/security assertions.
--- These checks are data-independent and safe to run against a linked database.
-\echo 1..8
+-- Run with psql after applying the migration. These checks do not create requests.
+\echo 1..11
 
 select to_regclass('public.service_request_idempotency') is not null as ok \gset
 \if :ok
@@ -51,16 +51,55 @@ select exists(select 1 from pg_constraint where conrelid='public.service_request
 select exists(select 1 from pg_constraint where conrelid='public.service_request_idempotency'::regclass
   and conname='service_request_idempotency_service_request_id_key' and contype='u') as ok \gset
 \if :ok
-\echo ok 7 - one idempotency mapping cannot point at multiple keys for the same request
+\echo ok 7 - one idempotency mapping per service request
 \else
-\echo not ok 7 - one idempotency mapping cannot point at multiple keys for the same request
+\echo not ok 7 - one idempotency mapping per service request
 \endif
 
-select coalesce(pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
-  like '%client_request_id%' and pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
-  like '%return v_request_id%',false) as ok \gset
+select coalesce(
+  pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
+    like '%client_request_id%'
+    and pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
+    like '%return v_request_id%',
+  false
+) as ok \gset
 \if :ok
-\echo ok 8 - request RPC checks the client key and returns the request UUID
+\echo ok 8 - request RPC returns the original UUID for a repeated key
 \else
-\echo not ok 8 - request RPC checks the client key and returns the request UUID
+\echo not ok 8 - request RPC returns the original UUID for a repeated key
+\endif
+
+select coalesce(
+  pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
+    like '%when ''now'' then ''emergency''%'
+    and pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
+    like '%when ''today'' then ''urgent''%'
+    and pg_get_functiondef('public.create_service_request(uuid,text,double precision,double precision,text,text,text,text,uuid)'::regprocedure)
+    like '%when ''this_week'' then ''normal''%',
+  false
+) as ok \gset
+\if :ok
+\echo ok 9 - app urgency values map to database constraint values
+\else
+\echo not ok 9 - app urgency values map to database constraint values
+\endif
+
+select coalesce(
+  pg_get_functiondef('public.match_service_request(uuid)'::regprocedure)
+    like '%v_request.urgency = ''emergency''%'
+    and pg_get_functiondef('public.match_service_request(uuid)'::regprocedure)
+    like '%v_request.urgency = ''urgent''%',
+  false
+) as ok \gset
+\if :ok
+\echo ok 10 - matching scoring uses valid database urgency values
+\else
+\echo not ok 10 - matching scoring uses valid database urgency values
+\endif
+
+select not has_table_privilege('authenticated','public.service_requests','INSERT') as ok \gset
+\if :ok
+\echo ok 11 - authenticated clients cannot bypass the idempotent RPC with direct inserts
+\else
+\echo not ok 11 - authenticated clients cannot bypass the idempotent RPC with direct inserts
 \endif
