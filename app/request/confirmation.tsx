@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as SecureStore from "expo-secure-store";
 
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../contexts/AuthContext";
@@ -135,8 +135,7 @@ export default function ConfirmationScreen() {
 
       {submitError ? (
         <View style={styles.errorBox} accessibilityRole="alert">
-          <Text style={styles.errorTitle}>Couldn't confirm submission</Text>
-          <Text style={styles.errorText}>{submitError}</Text>
+          <Text style={styles.errorTitle}>Couldn&apos;t confirm submission</Text>          <Text style={styles.errorText}>{submitError}</Text>
           <Text style={styles.errorHint}>Keep this screen open if possible. Retry uses the same request ID.</Text>
         </View>
       ) : null}
