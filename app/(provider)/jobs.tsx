@@ -5,11 +5,12 @@ import { RouteScaffold } from "../../components/RouteScaffold";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
-import * as Linking from "expo-linking";
 import type { JobReview, JobStatus } from "../../lib/reviews";
-import { directionsUrl, whatsappUrl } from "../../lib/contact";
+import { ContactActions } from "../../components/ContactActions";
+import { getServiceLifecycleStatus, ServiceStatusTimeline } from "../../components/ServiceStatusTimeline";
+import { confirmBlockUser } from "../../lib/userSafety";
 
-type Job = { job_id: string; request_id: string; customer_name: string | null; customer_phone: string | null; category_name: string | null; title: string | null; description: string | null; address: string | null; area_name: string | null; county: string | null; latitude: number | null; longitude: number | null; urgency: string; preferred_time: string | null; budget_min: number | null; budget_max: number | null; status: JobStatus; agreed_price: number | null; started_at: string | null; completed_at: string | null; cancelled_at: string | null; cancellation_reason: string | null; created_at: string; review?: JobReview };
+type Job = { job_id: string; request_id: string; customer_id: string; customer_name: string | null; customer_phone: string | null; category_name: string | null; title: string | null; description: string | null; address: string | null; area_name: string | null; county: string | null; latitude: number | null; longitude: number | null; urgency: string; preferred_time: string | null; budget_min: number | null; budget_max: number | null; status: JobStatus; agreed_price: number | null; started_at: string | null; completed_at: string | null; cancelled_at: string | null; cancellation_reason: string | null; created_at: string; review?: JobReview };
 const activeStatuses: JobStatus[] = ["assigned", "accepted", "on_the_way", "arrived", "in_progress", "awaiting_confirmation"];
 const cancellableStatuses: JobStatus[] = ["assigned", "accepted", "on_the_way", "arrived", "in_progress"];
 const disputableStatuses: JobStatus[] = [...cancellableStatuses, "awaiting_confirmation"];
@@ -87,14 +88,27 @@ export default function ProviderJobsScreen() {
     {!!error && <Text style={styles.muted}>{error}</Text>}
     {!loading && !visible.length && !error && <Text style={styles.muted}>No {filter} jobs yet.</Text>}
     {visible.map((job) => <View key={job.job_id} style={styles.card}>
-      <View style={styles.row}><Text style={styles.heading}>{job.category_name || "Service job"}</Text><Text style={styles.status}>{job.status.replaceAll("_", " ")}</Text></View>
+      <View style={styles.row}><Text style={styles.heading}>{job.category_name || "Service job"}</Text><Text style={styles.status}>{getServiceLifecycleStatus(job.status, "job")}</Text></View>
+      <ServiceStatusTimeline status={job.status} source="job" />
       <Text style={styles.title}>{job.title || "Service request"}</Text>
       <Text style={styles.text}>Customer: {job.customer_name || "Customer"}</Text>
-      {!!job.customer_phone && <TouchableOpacity onPress={() => void Linking.openURL(`tel:${job.customer_phone}`).catch(() => Alert.alert("Contact unavailable", "This device cannot open the phone app."))}><Text style={styles.link}>Call customer · {job.customer_phone}</Text></TouchableOpacity>}
-      {!!job.customer_phone && <TouchableOpacity onPress={() => void Linking.openURL(whatsappUrl(job.customer_phone!, `Hello, I found your request on Mtaa-services. I can help with ${job.category_name || job.title || "your service"} in ${job.area_name || "your area"}.`)).catch(() => Alert.alert("WhatsApp unavailable", "Could not open WhatsApp."))}><Text style={styles.link}>WhatsApp customer</Text></TouchableOpacity>}
+      <ContactActions
+        phone={job.customer_phone}
+        service={job.category_name || job.title}
+        area={job.area_name || job.county}
+        destination={{
+          latitude: job.latitude,
+          longitude: job.longitude,
+          address: job.address,
+          areaName: job.area_name,
+          county: job.county,
+        }}
+      />
+      <TouchableOpacity style={styles.cancelButton} onPress={() => confirmBlockUser(job.customer_id, job.customer_name || "this customer")}>
+        <Text style={styles.cancelText}>Block customer</Text>
+      </TouchableOpacity>
       {!!job.description && <Text style={styles.muted}>{job.description}</Text>}
       <Text style={styles.muted}>Location: {[job.address, job.area_name, job.county].filter(Boolean).join(", ") || "Not provided"}</Text>
-      {!!directionsUrl({ latitude: job.latitude, longitude: job.longitude, address: job.address, areaName: job.area_name, county: job.county }) && <TouchableOpacity onPress={() => void Linking.openURL(directionsUrl({ latitude: job.latitude, longitude: job.longitude, address: job.address, areaName: job.area_name, county: job.county })!).catch(() => Alert.alert("Directions unavailable", "Could not open a maps app."))}><Text style={styles.link}>Directions to customer</Text></TouchableOpacity>}
       <Text style={styles.muted}>Urgency: {job.urgency}</Text>
       {!!job.preferred_time && <Text style={styles.muted}>Preferred time: {job.preferred_time}</Text>}
       {(job.budget_min !== null || job.budget_max !== null) && <Text style={styles.muted}>Budget: KES {job.budget_min ?? "—"}–{job.budget_max ?? "—"}</Text>}
@@ -108,7 +122,7 @@ export default function ProviderJobsScreen() {
       {actionForStatus[job.status]?.map((item) => <TouchableOpacity key={item.action} style={styles.primaryButton} disabled={busyId !== null} onPress={() => void perform(job, item.action)}><Text style={styles.primaryText}>{busyId === job.job_id ? "Updating…" : item.label}</Text></TouchableOpacity>)}
       {cancellableStatuses.includes(job.status) && <TouchableOpacity style={styles.cancelButton} disabled={busyId !== null} onPress={() => cancel(job)}><Text style={styles.cancelText}>Cancel job</Text></TouchableOpacity>}
       {disputableStatuses.includes(job.status) && <TouchableOpacity style={styles.cancelButton} onPress={() => router.push({ pathname: "/dispute" as never, params: { jobId: job.job_id } })}><Text style={styles.disputed}>Report a job issue</Text></TouchableOpacity>}
-      <TouchableOpacity style={styles.cancelButton} onPress={() => router.push({ pathname: "/report" as never, params: { jobId: job.job_id } })}><Text style={styles.cancelText}>Report account or service</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.cancelButton} onPress={() => router.push({ pathname: "/report" as never, params: { reportedUserId: job.customer_id, jobId: job.job_id } })}><Text style={styles.cancelText}>Report account or service</Text></TouchableOpacity>
       {job.status === "disputed" && <Text style={styles.disputed}>This job is under dispute. Contact support for next steps.</Text>}
     </View>)}
   </RouteScaffold>;

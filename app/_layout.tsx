@@ -58,6 +58,10 @@ function NotificationNavigation() {
         typeof data.jobId === "string"
           ? data.jobId
           : undefined;
+      const eventType =
+        typeof data.eventType === "string"
+          ? data.eventType
+          : undefined;
 
       // Avoid processing the same notification twice.
       const notificationKey =
@@ -75,6 +79,11 @@ function NotificationNavigation() {
         void supabase.rpc("mark_notification_read", {
           p_notification_id: notificationId,
         });
+      }
+
+      if (eventType === "review_reminder" && jobId) {
+        router.push({ pathname: "/(customer)/review", params: { jobId } });
+        return;
       }
 
       // Navigate to the destination encoded in the notification payload.

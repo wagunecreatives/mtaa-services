@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { GlassView } from "expo-glass-effect";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -147,12 +148,19 @@ export default function LoginScreen() {
       style={styles.keyboardContainer}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <View style={styles.backgroundOrbLarge} />
+      <View style={styles.backgroundOrbSmall} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
+          <GlassView
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            glassEffectStyle="clear"
+          />
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.brand}>MTAA SERVICES</Text>
@@ -275,19 +283,54 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   keyboardContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#EEF4FF",
+    overflow: "hidden",
+  },
+
+  backgroundOrbLarge: {
+    position: "absolute",
+    top: -92,
+    right: -78,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "rgba(59, 130, 246, 0.16)",
+  },
+
+  backgroundOrbSmall: {
+    position: "absolute",
+    bottom: -72,
+    left: -64,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: "rgba(245, 158, 11, 0.13)",
   },
 
   scrollContent: {
     flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 22,
+    paddingVertical: 32,
   },
 
   container: {
-    flex: 1,
-    justifyContent: "center",
+    position: "relative",
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 500,
     paddingHorizontal: 24,
-    paddingVertical: 48,
-    backgroundColor: Colors.background,
+    paddingVertical: 30,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    overflow: "hidden",
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
   },
 
   header: {

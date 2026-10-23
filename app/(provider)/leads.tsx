@@ -79,15 +79,17 @@ export default function ProviderLeadsScreen() {
     {!!error && <Text style={styles.muted}>{error}</Text>}
     {!loading && visibleLeads.length === 0 && !error && <Text style={styles.muted}>{params.requestId ? "This lead is no longer available." : "No matched leads yet. New eligible requests will appear here."}</Text>}
     {visibleLeads.map((lead) => <View key={lead.request_id} style={styles.card}>
-      <View style={styles.row}><Text style={styles.heading}>🚨 New {lead.category_name} Request</Text><Text style={styles.badge}>{(lead.urgency ?? "standard").toUpperCase()}</Text></View>
+      <View style={styles.row}><Text style={styles.heading}>🚨 New {lead.category_name} Request</Text></View>
       <Text style={styles.label}>Location</Text>
       <Text style={styles.text}>{[lead.area_name, lead.county].filter(Boolean).join(", ") || "Service area"}</Text>
-      <Text style={styles.label}>Distance</Text>
-      <Text style={styles.text}>{lead.distance_km !== null ? `${lead.distance_km.toFixed(1)} km` : "Within your selected service area"}</Text>
+      <Text style={styles.label}>Urgency</Text>
+      <Text style={styles.badge}>{(lead.urgency ?? "standard").toUpperCase()}</Text>
       <Text style={styles.label}>Problem</Text>
       <Text style={styles.text}>{lead.description || lead.title || lead.category_name}</Text>
+      <Text style={styles.label}>Distance</Text>
+      <Text style={styles.text}>{lead.distance_km !== null ? `${lead.distance_km.toFixed(1)} km` : "Within your selected service area"}</Text>
       {lead.response_id
-        ? <Text style={styles.accepted}>Accepted · Customer notified</Text>
+        ? <Text style={styles.accepted}>Customer contacted</Text>
         : <View style={styles.actions}>
           <TouchableOpacity style={styles.acceptButton} disabled={busyId !== null} onPress={() => void accept(lead)}>
             <Text style={styles.buttonText}>{busyId === lead.request_id ? "Accepting…" : "ACCEPT"}</Text>

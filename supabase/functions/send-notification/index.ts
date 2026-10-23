@@ -31,7 +31,13 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, skipped: true }, { headers: cors });
     }
     const messages = tokens.map((token) => ({ to: token.expo_push_token, sound: "default", title: notice.title, body: notice.body,
-      data: { screen: notice.data?.screen, requestId: notice.data?.requestId, notificationId: notice.id }, channelId: "default", priority: "high" }));
+      data: {
+        screen: notice.data?.screen,
+        requestId: notice.data?.requestId,
+        jobId: notice.data?.jobId,
+        eventType: notice.event_type,
+        notificationId: notice.id,
+      }, channelId: "default", priority: "high" }));
     const response = await fetch("https://exp.host/--/api/v2/push/send", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(messages) });
     const result = await response.json();
     if (!response.ok) throw new Error(`Expo push returned ${response.status}`);

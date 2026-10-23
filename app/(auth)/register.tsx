@@ -2,6 +2,9 @@ import { useState } from "react";
 
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -9,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { GlassView } from "expo-glass-effect";
 import { useRouter } from "expo-router";
 
 import { Colors } from "../../constants/Colors";
@@ -113,149 +117,206 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        Create Account
-      </Text>
-
-      <Text style={styles.subtitle}>
-        Join MTAA SERVICES
-      </Text>
-
-      {notice && (
-        <View style={[styles.notice, notice.kind === "success" && styles.successNotice]}>
-          <Text style={styles.noticeTitle}>{notice.title}</Text>
-          <Text style={styles.noticeMessage}>{notice.message}</Text>
-          {notice.kind === "success" && (
-            <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-              <Text style={styles.noticeAction}>Continue to Login</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      <TextInput
-        value={fullName}
-        onChangeText={setFullName}
-        placeholder="Full name"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        style={styles.input}
-      />
-
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email address"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={styles.input}
-      />
-
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        secureTextEntry
-        style={styles.input}
-      />
-
-      <Text style={styles.sectionTitle}>
-        What do you want to do?
-      </Text>
-
-      <TouchableOpacity
-        style={[
-          styles.option,
-          accountType === "customer" &&
-            styles.optionSelected,
-        ]}
-        onPress={() =>
-          setAccountType("customer")
-        }
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={styles.backgroundOrbLarge} />
+      <View style={styles.backgroundOrbSmall} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text
-          style={[
-            styles.optionTitle,
-            accountType === "customer" &&
-              styles.optionTitleSelected,
-          ]}
-        >
-          Find Services
-        </Text>
-
-        <Text style={styles.optionDescription}>
-          I need trusted local service providers.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.option,
-          accountType === "provider" &&
-            styles.optionSelected,
-        ]}
-        onPress={() =>
-          setAccountType("provider")
-        }
-      >
-        <Text
-          style={[
-            styles.optionTitle,
-            accountType === "provider" &&
-              styles.optionTitleSelected,
-          ]}
-        >
-          Offer Services
-        </Text>
-
-        <Text style={styles.optionDescription}>
-          I provide services and want customers.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator
-            color={Colors.textInverse}
+        <View style={styles.container}>
+          <GlassView
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            glassEffectStyle="clear"
           />
-        ) : (
-          <Text style={styles.buttonText}>
+          <Text style={styles.title}>
             Create Account
           </Text>
-        )}
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() =>
-          router.push("/(auth)/login")
-        }
-      >
-        <Text style={styles.loginText}>
-          Already have an account? Login
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.subtitle}>
+            Join MTAA SERVICES
+          </Text>
+
+          {notice && (
+            <View style={[styles.notice, notice.kind === "success" && styles.successNotice]}>
+              <Text style={styles.noticeTitle}>{notice.title}</Text>
+              <Text style={styles.noticeMessage}>{notice.message}</Text>
+              {notice.kind === "success" && (
+                <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
+                  <Text style={styles.noticeAction}>Continue to Login</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          <TextInput
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder="Full name"
+            placeholderTextColor={Colors.textLight}
+            style={styles.input}
+          />
+
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email address"
+            placeholderTextColor={Colors.textLight}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
+          />
+
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor={Colors.textLight}
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <Text style={styles.sectionTitle}>
+            What do you want to do?
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.option,
+              accountType === "customer" &&
+                styles.optionSelected,
+            ]}
+            onPress={() =>
+              setAccountType("customer")
+            }
+          >
+            <Text
+              style={[
+                styles.optionTitle,
+                accountType === "customer" &&
+                  styles.optionTitleSelected,
+              ]}
+            >
+              Find Services
+            </Text>
+
+            <Text style={styles.optionDescription}>
+              I need trusted local service providers.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.option,
+              accountType === "provider" &&
+                styles.optionSelected,
+            ]}
+            onPress={() =>
+              setAccountType("provider")
+            }
+          >
+            <Text
+              style={[
+                styles.optionTitle,
+                accountType === "provider" &&
+                  styles.optionTitleSelected,
+              ]}
+            >
+              Offer Services
+            </Text>
+
+            <Text style={styles.optionDescription}>
+              I provide services and want customers.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator
+                color={Colors.textInverse}
+              />
+            ) : (
+              <Text style={styles.buttonText}>
+                Create Account
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/(auth)/login")
+            }
+          >
+            <Text style={styles.loginText}>
+              Already have an account? Login
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardContainer: {
     flex: 1,
+    backgroundColor: "#EEF4FF",
+    overflow: "hidden",
+  },
+
+  backgroundOrbLarge: {
+    position: "absolute",
+    top: -92,
+    right: -78,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "rgba(59, 130, 246, 0.16)",
+  },
+
+  backgroundOrbSmall: {
+    position: "absolute",
+    bottom: -72,
+    left: -64,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: "rgba(245, 158, 11, 0.13)",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
+    paddingHorizontal: 22,
+    paddingVertical: 32,
+  },
+
+  container: {
+    position: "relative",
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 500,
     paddingHorizontal: 24,
-    backgroundColor: Colors.background,
+    paddingVertical: 30,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    overflow: "hidden",
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
   },
 
   title: {
