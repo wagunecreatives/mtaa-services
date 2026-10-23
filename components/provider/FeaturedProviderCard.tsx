@@ -27,13 +27,13 @@ export function FeaturedProviderCard({ provider, onPress, width = FEATURED_CARD_
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${provider.business_name}, ${provider.category}, ${provider.area_name}, ${ratingText}. Request a service.`}
+      accessibilityLabel={`${provider.is_test ? "Test featured listing, " : ""}${provider.business_name}, ${provider.category}, ${provider.area_name}, ${ratingText}. Request a service.`}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}
     >
       <View style={styles.topRow}>
         <View style={styles.featuredPill}>
           <Ionicons name="sparkles" size={12} color={Colors.accentText} />
-          <Text style={styles.featuredText}>Featured</Text>
+          <Text style={styles.featuredText}>{provider.is_test ? "Test featured" : "Featured"}</Text>
         </View>
         <RatingBadge rating={provider.rating_average} reviews={provider.total_reviews} />
       </View>

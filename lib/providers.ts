@@ -11,4 +11,5 @@ export type FeaturedProvider = {
   category_id?: string;
   area_name: string;
   featured_until?: string;
+  is_test?: boolean;
 };

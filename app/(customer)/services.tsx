@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { RouteScaffold } from "../../components/RouteScaffold";
 import { FEATURED_CARD_WIDTH, FeaturedProviderCard } from "../../components/provider/FeaturedProviderCard";
 import { SectionHeader } from "../../components/provider/SectionHeader";
@@ -13,33 +13,46 @@ import { supabase } from "../../lib/supabase";
 
 const CACHE_KEY = "mtaa.featured-providers.v1";
 const CARD_GAP = 12;
+type CategoryOption = { id: string; name: string };
+type AreaOption = { area_name: string; county: string };
 
 export default function CustomerServicesScreen() {
   const [featured, setFeatured] = useState<FeaturedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null);
   const [showingCached, setShowingCached] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [areas, setAreas] = useState<AreaOption[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
 
   const loadFeatured = useCallback(async () => {
     setErrorMessage(null);
     setLoading(true);
     setRefreshing(true);
+    if (categoryFilter || areaFilter) {
+      setFeatured([]);
+      setShowingCached(false);
+    }
 
     try {
       const { data, error } = await supabase.rpc("get_active_featured_providers", {
-        p_category_id: null,
-        p_area_name: null,
+        p_category_id: categoryFilter || null,
+        p_area_name: areaFilter || null,
       });
       if (error) throw error;
 
       const rows = (data ?? []) as FeaturedProvider[];
       setFeatured(rows);
       setShowingCached(false);
-      try {
-        await SecureStore.setItemAsync(CACHE_KEY, JSON.stringify(rows));
-      } catch {
-        // The live result remains useful even if local caching is unavailable.
+      if (!categoryFilter && !areaFilter) {
+        try {
+          await SecureStore.setItemAsync(CACHE_KEY, JSON.stringify(rows));
+        } catch {
+          // The live result remains useful even if local caching is unavailable.
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
@@ -52,28 +65,48 @@ export default function CustomerServicesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [categoryFilter, areaFilter]);
 
   useEffect(() => {
     let active = true;
     void (async () => {
-      try {
-        const raw = await SecureStore.getItemAsync(CACHE_KEY);
-        if (raw && active) {
-          const rows = JSON.parse(raw) as FeaturedProvider[];
-          if (Array.isArray(rows)) {
-            setFeatured(rows);
-            setShowingCached(true);
-            setLoading(false);
+      if (!categoryFilter && !areaFilter) {
+        try {
+          const raw = await SecureStore.getItemAsync(CACHE_KEY);
+          if (raw && active) {
+            const rows = JSON.parse(raw) as FeaturedProvider[];
+            if (Array.isArray(rows)) {
+              setFeatured(rows);
+              setShowingCached(true);
+              setLoading(false);
+            }
           }
+        } catch {
+          // Continue to live fetch if the cache is missing or corrupt.
         }
-      } catch {
-        // Continue to live fetch if the cache is missing or corrupt.
       }
       if (active) await loadFeatured();
     })();
     return () => { active = false; };
-  }, [loadFeatured]);
+  }, [loadFeatured, categoryFilter, areaFilter]);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([
+      supabase.from("service_categories").select("id,name").eq("is_active", true).order("sort_order"),
+      supabase.from("platform_service_areas").select("area_name,county").eq("is_active", true).order("sort_order"),
+    ]).then(([categoryResult, areaResult]) => {
+      if (!active) return;
+      const queryError = categoryResult.error ?? areaResult.error;
+      if (queryError) {
+        setFilterErrorMessage("We couldn't load service and area filters.");
+        return;
+      }
+      setCategories(categoryResult.data ?? []);
+      setAreas(areaResult.data ?? []);
+    });
+    return () => { active = false; };
+  }, []);
 
    return (
     <RouteScaffold eyebrow="Customer" title="Find a service" description="Tell us what you need and we will help you find a nearby provider.">
@@ -95,6 +128,26 @@ export default function CustomerServicesScreen() {
       </TouchableOpacity>
 
       <SectionHeader title="Featured providers" />
+      {filterErrorMessage ? <Text style={styles.errorText}>{filterErrorMessage}</Text> : null}
+
+      <Text style={styles.filterLabel}>Service</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChoices}>
+        <TouchableOpacity style={[styles.filterChoice, !categoryFilter && styles.filterChoiceActive]} onPress={() => setCategoryFilter("")}>
+          <Text style={[styles.filterText, !categoryFilter && styles.filterTextActive]}>All services</Text>
+        </TouchableOpacity>
+        {categories.map((category) => <TouchableOpacity key={category.id} style={[styles.filterChoice, categoryFilter === category.id && styles.filterChoiceActive]} onPress={() => setCategoryFilter(category.id)}>
+          <Text style={[styles.filterText, categoryFilter === category.id && styles.filterTextActive]}>{category.name}</Text>
+        </TouchableOpacity>)}
+      </ScrollView>
+      <Text style={styles.filterLabel}>Area</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChoices}>
+        <TouchableOpacity style={[styles.filterChoice, !areaFilter && styles.filterChoiceActive]} onPress={() => setAreaFilter("")}>
+          <Text style={[styles.filterText, !areaFilter && styles.filterTextActive]}>All areas</Text>
+        </TouchableOpacity>
+        {areas.map((area) => <TouchableOpacity key={`${area.county}:${area.area_name}`} style={[styles.filterChoice, areaFilter === area.area_name && styles.filterChoiceActive]} onPress={() => setAreaFilter(area.area_name)}>
+          <Text style={[styles.filterText, areaFilter === area.area_name && styles.filterTextActive]}>{area.area_name}</Text>
+        </TouchableOpacity>)}
+      </ScrollView>
 
       {showingCached ? (
         <View style={styles.noticeBox}>
@@ -172,6 +225,12 @@ const styles = StyleSheet.create({
   browseText: { flex: 1, gap: 2 },
   browseTitle: { color: Colors.text, fontSize: 17, fontWeight: "800" },
   browseSubtitle: { color: Colors.textSecondary, fontSize: 13 },
+  filterLabel: { color: Colors.text, fontSize: 13, fontWeight: "800", marginTop: 4 },
+  filterChoices: { gap: 8, paddingVertical: 4 },
+  filterChoice: { minHeight: 38, justifyContent: "center", paddingHorizontal: 12, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: Colors.border },
+  filterChoiceActive: { borderColor: Colors.primary, backgroundColor: Colors.primary },
+  filterText: { color: Colors.textSecondary, fontSize: 12, fontWeight: "700" },
+  filterTextActive: { color: "#fff" },
   muted: { flex: 1, color: Colors.textSecondary, lineHeight: 20 },
   loading: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
   noticeBox: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: BorderRadius.md, backgroundColor: Colors.accentSoft },
