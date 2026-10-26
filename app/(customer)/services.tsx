@@ -13,7 +13,7 @@ import { supabase } from "../../lib/supabase";
 
 const CACHE_KEY = "mtaa.featured-providers.v1";
 const CARD_GAP = 12;
-type CategoryOption = { id: string; name: string };
+type CategoryOption = { id: string; name: string; slug: string };
 type AreaOption = { area_name: string; county: string };
 
 export default function CustomerServicesScreen() {
@@ -93,7 +93,7 @@ export default function CustomerServicesScreen() {
   useEffect(() => {
     let active = true;
     void Promise.all([
-      supabase.from("service_categories").select("id,name").eq("is_active", true).order("sort_order"),
+      supabase.from("service_categories").select("id,name,slug").eq("is_active", true).order("sort_order"),
       supabase.from("platform_service_areas").select("area_name,county").eq("is_active", true).order("sort_order"),
     ]).then(([categoryResult, areaResult]) => {
       if (!active) return;
@@ -195,7 +195,29 @@ export default function CustomerServicesScreen() {
           data={featured}
           keyExtractor={(provider) => `${provider.provider_id}-${provider.category}-${provider.area_name}`}
           renderItem={({ item }) => (
-            <FeaturedProviderCard provider={item} onPress={() => router.push("/request/category")} />
+            <FeaturedProviderCard
+              provider={item}
+              onViewProfile={() => router.push({
+                pathname: "/(customer)/provider-profile",
+                params: {
+                  providerId: item.provider_id,
+                  name: item.business_name,
+                  bio: item.bio ?? "",
+                  photoUrl: item.profile_image_url ?? "",
+                  rating: item.rating_average?.toString() ?? "",
+                  reviews: item.total_reviews?.toString() ?? "",
+                  category: item.category,
+                  categoryId: item.category_id ?? "",
+                  area: item.area_name,
+                },
+              })}
+              onRequestService={() => {
+                const category = categories.find((option) => option.id === item.category_id);
+                router.push(category
+                  ? { pathname: "/request/category", params: { categoryId: category.id } }
+                  : "/request/category");
+              }}
+            />
           )}
           showsHorizontalScrollIndicator={false}
           snapToInterval={FEATURED_CARD_WIDTH + CARD_GAP}

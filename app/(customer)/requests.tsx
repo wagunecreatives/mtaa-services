@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { RouteScaffold } from "../../components/RouteScaffold";
 import { ContactActions } from "../../components/ContactActions";
+import { VerifiedBadge } from "../../components/provider/VerifiedBadge";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../contexts/AuthContext";
 import { registerPushToken, setPushPreference } from "../../lib/pushNotifications";
@@ -11,17 +12,19 @@ import type { JobStatus } from "../../lib/reviews";
 import { getServiceLifecycleStatus, ServiceStatusTimeline } from "../../components/ServiceStatusTimeline";
 import { confirmBlockUser } from "../../lib/userSafety";
 
-type Request = { id: string; title: string | null; area_name: string | null; urgency: string | null; status: string; cancellation_reason: string | null; created_at: string };
-type Response = { response_id: string; provider_id: string; business_name: string | null; provider_name: string | null; rating_average: number | null; total_reviews: number | null; message: string; quoted_price: number | null; estimated_arrival_minutes: number | null; response_status: string; job_id: string | null; job_status: JobStatus | null; agreed_price: number | null; started_at: string | null; completed_at: string | null; cancelled_at: string | null; provider_contact: string | null; provider_phone: string | null; provider_whatsapp: string | null; distance_km: number | null; provider_available: boolean; verification_status: string; phone_verified: boolean; review_id?: string | null; review_rating?: number | null; review_text?: string | null };
+type Request = { id: string; category_id: string; title: string | null; area_name: string | null; urgency: string | null; status: string; cancellation_reason: string | null; created_at: string };
+type Response = { response_id: string; provider_id: string; business_name: string | null; provider_name: string | null; rating_average: number | null; total_reviews: number | null; message: string; quoted_price: number | null; estimated_arrival_minutes: number | null; response_status: string; job_id: string | null; job_status: JobStatus | null; agreed_price: number | null; started_at: string | null; completed_at: string | null; cancelled_at: string | null; provider_contact: string | null; provider_phone: string | null; provider_whatsapp: string | null; distance_km: number | null; provider_available: boolean; verification_status: string; phone_verified: boolean; email_verified: boolean; review_id?: string | null; review_rating?: number | null; review_text?: string | null };
 const cancellableRequest = ["open", "matching", "responses_received"];
 const cancellableJob: JobStatus[] = ["assigned", "accepted", "on_the_way", "arrived", "in_progress"];
 const disputableJob: JobStatus[] = [...cancellableJob, "awaiting_confirmation"];
 
 export default function CustomerRequestsScreen() {
+  const params = useLocalSearchParams<{ requestId?: string | string[] }>();
+  const requestedId = Array.isArray(params.requestId) ? params.requestId[0] : params.requestId;
   const { user } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
   const [details, setDetails] = useState<Record<string, Response[]>>({});
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(requestedId ?? null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
@@ -51,7 +54,7 @@ export default function CustomerRequestsScreen() {
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase.from("service_requests").select("id,title,area_name,urgency,status,cancellation_reason,created_at").eq("customer_id", user.id).order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("service_requests").select("id,category_id,title,area_name,urgency,status,cancellation_reason,created_at").eq("customer_id", user.id).order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data ?? []) as Request[];
       setRequests(rows);
@@ -163,6 +166,7 @@ export default function CustomerRequestsScreen() {
             <Text style={styles.title}>{job.business_name || job.provider_name || "Provider"}</Text>
             <Text style={styles.muted}>Rating: {job.rating_average?.toFixed(1) ?? "New"} ({job.total_reviews ?? 0} reviews)</Text>
             <Text style={styles.status}>Job: {job.job_status?.replaceAll("_", " ")}</Text>
+            {!!job.provider_id && <TouchableOpacity onPress={() => router.push({ pathname: "/(customer)/provider-profile", params: { providerId: job.provider_id!, name: job.business_name || job.provider_name || "Provider", category: request.title || "Service provider", categoryId: request.category_id, area: request.area_name || "" } })}><Text style={styles.link}>View provider profile</Text></TouchableOpacity>}
             {!!job.provider_id && <TouchableOpacity onPress={() => router.push({ pathname: "/report" as never, params: { reportedUserId: job.provider_id, jobId: job.job_id! } })}><Text style={styles.cancelText}>Report provider or service</Text></TouchableOpacity>}
             {!!job.provider_id && <TouchableOpacity onPress={() => confirmBlockUser(job.provider_id!, job.business_name || job.provider_name || "this provider", () => setBlockedProviderIds((current) => new Set(current).add(job.provider_id!)))}><Text style={styles.cancelText}>Block provider</Text></TouchableOpacity>}
             {job.job_status === "awaiting_confirmation" && <>
@@ -193,11 +197,12 @@ export default function CustomerRequestsScreen() {
             <View style={styles.providerFacts}>
               <Text style={styles.rating}>{"\u2B50"} {response.rating_average?.toFixed(1) ?? "New"}</Text>
               {response.total_reviews ? <Text style={styles.factText}>{response.total_reviews} reviews</Text> : null}
-              <Text style={styles.factText}>{response.verification_status === "verified" && response.phone_verified ? "Verified" : "Unverified"}</Text>
+              {response.email_verified ? <VerifiedBadge /> : <Text style={styles.factText}>Email not verified</Text>}
               <Text style={styles.factText}>{response.distance_km !== null ? `${response.distance_km.toFixed(1)} km` : "Your selected area"}</Text>
               <Text style={[styles.factText, response.provider_available ? styles.availableText : styles.unavailableText]}>{response.provider_available ? "Available now" : "Unavailable"}</Text>
             </View>
             <Text style={styles.body}>{response.message}</Text>
+            <TouchableOpacity onPress={() => router.push({ pathname: "/(customer)/provider-profile", params: { providerId: response.provider_id, name: response.business_name || response.provider_name || "Provider", rating: response.rating_average?.toString() || "", reviews: response.total_reviews?.toString() || "", category: request.title || "Service provider", categoryId: request.category_id, area: request.area_name || "" } })}><Text style={styles.link}>View provider profile and work photos</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => router.push({ pathname: "/report" as never, params: { reportedUserId: response.provider_id } })}><Text style={styles.cancelText}>Report provider</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => confirmBlockUser(response.provider_id, response.business_name || response.provider_name || "this provider", () => setBlockedProviderIds((current) => new Set(current).add(response.provider_id)))}><Text style={styles.cancelText}>Block provider</Text></TouchableOpacity>
             <ContactActions

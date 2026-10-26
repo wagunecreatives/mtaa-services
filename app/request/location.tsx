@@ -1,9 +1,12 @@
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
     TextInput,
     StyleSheet,
     Text,
@@ -12,12 +15,73 @@ import {
 } from "react-native";
 
 import { Colors } from "../../constants/Colors";
+import { RequestProgress } from "../../components/RequestProgress";
 import { useRequestDraft } from "../../contexts/RequestDraftContext";
+import { supabase } from "../../lib/supabase";
+
+type ServiceArea = { area_name: string; county: string };
+
+async function fetchServiceAreas(): Promise<ServiceArea[]> {
+  const { data, error } = await supabase
+    .from("platform_service_areas")
+    .select("area_name,county")
+    .eq("is_active", true)
+    .order("sort_order")
+    .order("area_name");
+  if (error) throw error;
+  return data ?? [];
+}
 
 export default function LocationScreen() {
   const router = useRouter();
   const { draft, update } = useRequestDraft();
   const [loading, setLoading] = useState(false);
+  const [serviceAreas, setServiceAreas] = useState<ServiceArea[]>([]);
+  const [areasLoading, setAreasLoading] = useState(true);
+  const [areasError, setAreasError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchServiceAreas()
+      .then((areas) => {
+        if (active) setServiceAreas(areas);
+      })
+      .catch((error) => {
+        console.warn("Could not load active service areas", error);
+        if (active) {
+          setAreasError("Service areas could not be loaded. You can still enter your location manually.");
+        }
+      })
+      .finally(() => {
+        if (active) setAreasLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const retryServiceAreas = async () => {
+    setAreasLoading(true);
+    setAreasError(null);
+    try {
+      setServiceAreas(await fetchServiceAreas());
+    } catch (error) {
+      console.warn("Could not load active service areas", error);
+      setAreasError("Service areas could not be loaded. You can still enter your location manually.");
+    } finally {
+      setAreasLoading(false);
+    }
+  };
+
+  const selectServiceArea = (area: ServiceArea) => {
+    update({
+      areaName: area.area_name,
+      county: area.county,
+      address: `${area.area_name}, ${area.county}`,
+      latitude: null,
+      longitude: null,
+    });
+  };
 
   const useCurrentLocation = async () => {
     try {
@@ -61,7 +125,7 @@ export default function LocationScreen() {
       });
     } catch (err) {
       console.error(err);
-      Alert.alert("Location error", "Couldn&apos;t get your location.");
+      Alert.alert("Location error", "Couldn't get your location.");
     } finally {
       setLoading(false);
     }
@@ -70,27 +134,69 @@ export default function LocationScreen() {
   const canContinue = Boolean(draft.areaName.trim() && draft.county.trim());
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.step}>Step 3 of 5</Text>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <RequestProgress step={3} />
       <Text style={styles.title}>Where is the job?</Text>
       <Text style={styles.subtitle}>
         We&apos;ll match you with providers near this location.
       </Text>
 
+      <Text style={styles.inputLabel}>Choose a service area</Text>
+      {areasLoading ? (
+        <ActivityIndicator color={Colors.primary} style={styles.areaLoader} />
+      ) : serviceAreas.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.areaChoices}>
+          {serviceAreas.map((area) => {
+            const selected = draft.areaName === area.area_name && draft.county === area.county;
+            return (
+              <TouchableOpacity
+                key={`${area.county}:${area.area_name}`}
+                style={[styles.areaChoice, selected && styles.areaChoiceSelected]}
+                onPress={() => selectServiceArea(area)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`${area.area_name}, ${area.county}`}
+              >
+                <Text style={[styles.areaChoiceText, selected && styles.areaChoiceTextSelected]}>
+                  {area.area_name}
+                </Text>
+                <Text style={[styles.areaCountyText, selected && styles.areaChoiceTextSelected]}>
+                  {area.county}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+      {areasError ? (
+        <View style={styles.areaError}>
+          <Text style={styles.hint}>{areasError}</Text>
+          <TouchableOpacity onPress={() => void retryServiceAreas()} accessibilityRole="button">
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Selected location</Text>
         <Text style={styles.cardValue}>
-          {draft.address || "No location selected yet"}
+          {draft.address || [draft.areaName, draft.county].filter(Boolean).join(", ") || "No location selected yet"}
         </Text>
       </View>
 
-      <Text style={styles.inputLabel}>Choose location manually</Text>
-      <Text style={styles.subtitle}>Enter the place you know. GPS coordinates are optional and can be corrected here.</Text>
+      <Text style={styles.inputLabel}>Or enter a location manually</Text>
+      <Text style={styles.manualHint}>GPS coordinates are optional. You can correct the area below.</Text>
       <Text style={styles.inputLabel}>County / town</Text>
       <TextInput
         style={styles.input}
         value={draft.county}
-        onChangeText={(county) => update({ county })}
+        onChangeText={(county) => update({
+          county,
+          address: [draft.areaName, county].filter(Boolean).join(", "),
+          latitude: null,
+          longitude: null,
+        })}
         placeholder="e.g. Kiambu, Ruiru"
         placeholderTextColor={Colors.textSecondary}
       />
@@ -98,11 +204,16 @@ export default function LocationScreen() {
       <TextInput
         style={styles.input}
         value={draft.areaName}
-        onChangeText={(areaName) => update({ areaName })}
+        onChangeText={(areaName) => update({
+          areaName,
+          address: [areaName, draft.county].filter(Boolean).join(", "),
+          latitude: null,
+          longitude: null,
+        })}
         placeholder="e.g. Membley"
         placeholderTextColor={Colors.textSecondary}
       />
-      <Text style={styles.hint}>You can edit these even when GPS is available. Coordinates are optional.</Text>
+      <Text style={styles.hint}>Editing the area uses your corrected address instead of GPS coordinates.</Text>
       {draft.latitude !== null && draft.longitude !== null ? (
         <Text style={styles.coordinates}>Coordinates: {draft.latitude.toFixed(6)}, {draft.longitude.toFixed(6)}</Text>
       ) : null}
@@ -140,41 +251,36 @@ export default function LocationScreen() {
           <Text style={styles.nextText}>Continue</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    paddingTop: 64,
     backgroundColor: Colors.background,
   },
-  step: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: Colors.primary,
-    letterSpacing: 0.5,
-  },
+  content: { flexGrow: 1, padding: 20, paddingTop: 54, paddingBottom: 30, backgroundColor: "#F4F8FD" },
   title: {
-    marginTop: 10,
-    fontSize: 26,
-    fontWeight: "800",
+    marginTop: 17,
+    fontSize: 23,
+    fontWeight: "900",
     color: Colors.text,
   },
   subtitle: {
     marginTop: 6,
-    marginBottom: 24,
-    fontSize: 15,
+    marginBottom: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: Colors.textSecondary,
   },
   card: {
-    padding: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    backgroundColor: Colors.backgroundSecondary,
+    borderColor: "#E8EEF5",
+    borderRadius: 17,
+    backgroundColor: "#FFFFFF",
   },
   cardLabel: {
     fontSize: 12,
@@ -190,16 +296,26 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   inputLabel: { marginTop: 16, marginBottom: 7, color: Colors.text, fontWeight: "700" },
-  input: { minHeight: 50, paddingHorizontal: 14, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, color: Colors.text, backgroundColor: Colors.backgroundSecondary },
+  input: { minHeight: 50, paddingHorizontal: 14, borderWidth: 1, borderColor: "#DCE4EE", borderRadius: 13, color: Colors.text, backgroundColor: "#FFFFFF" },
   hint: { marginTop: 10, color: Colors.textSecondary, fontSize: 13 },
+  manualHint: { marginTop: -3, marginBottom: 2, color: Colors.textSecondary, fontSize: 13, lineHeight: 19 },
   coordinates: { marginTop: 8, color: Colors.textSecondary, fontSize: 12 },
+  areaLoader: { paddingVertical: 12 },
+  areaChoices: { gap: 8, paddingBottom: 4 },
+  areaChoice: { minHeight: 48, justifyContent: "center", paddingHorizontal: 13, paddingVertical: 7, borderWidth: 1, borderColor: "#E8EEF5", borderRadius: 14, backgroundColor: "#FFFFFF" },
+  areaChoiceSelected: { borderColor: "#087BFA", backgroundColor: "#EAF3FF" },
+  areaChoiceText: { color: Colors.text, fontSize: 13, fontWeight: "800" },
+  areaChoiceTextSelected: { color: "#087BFA" },
+  areaCountyText: { marginTop: 2, color: Colors.textSecondary, fontSize: 11 },
+  areaError: { gap: 5, padding: 12, borderRadius: 12, backgroundColor: Colors.errorSoft },
+  retryText: { color: Colors.primary, fontSize: 13, fontWeight: "800" },
   primaryButton: {
     height: 54,
     marginTop: 16,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: Colors.primary,
+    backgroundColor: "#087BFA",
   },
   primaryButtonText: {
     fontSize: 16,
@@ -217,7 +333,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#DCE4EE",
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
   },
   backText: { fontSize: 16, fontWeight: "700", color: Colors.text },
@@ -227,7 +344,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: Colors.primary,
+    backgroundColor: "#087BFA",
   },
   nextDisabled: { opacity: 0.5 },
   nextText: {

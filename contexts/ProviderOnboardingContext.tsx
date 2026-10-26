@@ -3,7 +3,6 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 export type ProviderDraft = {
   businessName: string;
   ownerName: string;
-  phone: string;
   whatsapp: string;
   description: string;
   profilePhoto: string | null;
@@ -16,7 +15,7 @@ export type ProviderDraft = {
   endTime: string;
 };
 
-const initial: ProviderDraft = { businessName: "", ownerName: "", phone: "", whatsapp: "", description: "", profilePhoto: null, businessLogo: null, categoryIds: [], areas: [], county: "Kiambu", availableNow: true, startTime: "08:00", endTime: "20:00" };
+const initial: ProviderDraft = { businessName: "", ownerName: "", whatsapp: "", description: "", profilePhoto: null, businessLogo: null, categoryIds: [], areas: [], county: "Kiambu", availableNow: true, startTime: "08:00", endTime: "20:00" };
 const Context = createContext<{ draft: ProviderDraft; update: (patch: Partial<ProviderDraft>) => void; reset: () => void } | null>(null);
 
 export function ProviderOnboardingProvider({ children }: { children: ReactNode }) {

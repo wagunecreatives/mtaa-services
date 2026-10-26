@@ -13,6 +13,7 @@ export type Urgency = "now" | "today" | "this_week";
 
 export interface RequestDraft {
   category: string | null;
+  categoryName: string | null;
   description: string;
   latitude: number | null;
   longitude: number | null;
@@ -20,6 +21,7 @@ export interface RequestDraft {
   areaName: string;
   county: string;
   urgency: Urgency | null;
+  photos: string[];
 }
 
 interface PersistedRequestDraft {
@@ -31,6 +33,7 @@ const STORAGE_KEY = "mtaa.request-draft.v1";
 
 const emptyDraft: RequestDraft = {
   category: null,
+  categoryName: null,
   description: "",
   latitude: null,
   longitude: null,
@@ -38,6 +41,7 @@ const emptyDraft: RequestDraft = {
   areaName: "",
   county: "",
   urgency: null,
+  photos: [],
 };
 
 // This ID is an idempotency key, not an authentication secret.

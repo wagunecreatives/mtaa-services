@@ -3,16 +3,20 @@ import { useEffect } from "react";
 import { Platform } from "react-native";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import * as Notifications from "expo-notifications";
+import type { Notification } from "expo-notifications";
 
 import { AuthProvider } from "../contexts/AuthContext";
+import { RequestDraftProvider } from "../contexts/RequestDraftContext";
+import { getNotifications } from "../lib/notificationsModule";
 import { supabase } from "../lib/supabase";
 
 /**
  * Configure how notifications appear while the app is in the foreground.
  * expo-notifications presentation handlers are intended for native platforms.
  */
-if (Platform.OS !== "web") {
+const Notifications = getNotifications();
+
+if (Notifications) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -26,18 +30,20 @@ if (Platform.OS !== "web") {
 /**
  * Handles navigation when a user taps a push notification.
  *
- * Web skips the native notification-response APIs to prevent runtime errors.
+ * Unsupported runtimes skip the native notification-response APIs.
  */
 function NotificationNavigation() {
   useEffect(() => {
-    if (Platform.OS === "web") {
+    const Notifications = getNotifications();
+
+    if (Platform.OS === "web" || !Notifications) {
       return;
     }
 
     let isActive = true;
     let lastHandledNotificationKey: string | null = null;
 
-    const navigate = (notification: Notifications.Notification) => {
+    const navigate = (notification: Notification) => {
       if (!isActive) {
         return;
       }
@@ -153,23 +159,25 @@ function NotificationNavigation() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NotificationNavigation />
+      <RequestDraftProvider>
+        <NotificationNavigation />
 
-      <StatusBar style="auto" />
+        <StatusBar style="auto" />
 
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="(customer)" />
-        <Stack.Screen name="(provider)" />
-        <Stack.Screen name="(admin)" />
-        <Stack.Screen name="provider-onboarding" />
-        <Stack.Screen name="request" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="dispute" />
-        <Stack.Screen name="report" />
-      </Stack>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="account-review" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(customer)" />
+          <Stack.Screen name="(provider)" />
+          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="provider-onboarding" />
+          <Stack.Screen name="request" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="dispute" />
+          <Stack.Screen name="report" />
+        </Stack>
+      </RequestDraftProvider>
     </AuthProvider>
   );
 }

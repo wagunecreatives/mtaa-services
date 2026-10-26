@@ -10,6 +10,7 @@ export type FeaturedProvider = {
   category: string;
   category_id?: string;
   area_name: string;
+  email_verified?: boolean;
   featured_until?: string;
   is_test?: boolean;
 };

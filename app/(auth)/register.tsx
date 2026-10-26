@@ -20,6 +20,7 @@ import {
   useAuth,
   type AccountType,
 } from "../../contexts/AuthContext";
+import { normalizePhoneNumber } from "../../lib/phone";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -30,6 +31,9 @@ export default function RegisterScreen() {
     useState("");
 
   const [email, setEmail] =
+    useState("");
+
+  const [phone, setPhone] =
     useState("");
 
   const [password, setPassword] =
@@ -71,6 +75,16 @@ export default function RegisterScreen() {
       return;
     }
 
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!normalizedPhone) {
+      setNotice({
+        title: "Check your phone number",
+        message: "Enter a valid number in international format, for example +254712345678.",
+        kind: "error",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       setNotice(null);
@@ -79,16 +93,24 @@ export default function RegisterScreen() {
         email.trim(),
         password,
         fullName.trim(),
-        accountType
+        accountType,
+        normalizedPhone
       );
 
       if (error) {
         const timedOut = error.status === 504 || /504|timed out|timeout/i.test(error.message);
+        const confirmationEmailFailed = /error sending confirmation email/i.test(error.message);
         setNotice({
-          title: timedOut ? "Signup timed out" : "Registration failed",
+          title: timedOut
+            ? "Signup timed out"
+            : confirmationEmailFailed
+              ? "Confirmation email unavailable"
+              : "Registration failed",
           message: timedOut
             ? "The server did not respond in time. Your account may still have been created, so check your inbox before trying again. If you can sign in but need verification, use the resend option on the login screen."
-            : error.message,
+            : confirmationEmailFailed
+              ? "We couldn't send your verification email. Your account may already have been created. Check your inbox, or try signing in and use the resend option. If this continues, please contact support."
+              : error.message,
           kind: "error",
         });
 
@@ -98,8 +120,8 @@ export default function RegisterScreen() {
       setNotice({
         title: "Account created",
         message: accountType === "provider"
-          ? "Check your inbox for a confirmation email. Verify your address, then sign in to continue your provider application."
-          : "Check your inbox for a confirmation email. Verify your address, then sign in to open your customer account.",
+          ? "Check your inbox to confirm your email, then sign in to complete your provider setup. Your phone number is collected as unverified contact information."
+          : "Check your inbox to confirm your email, then sign in and verify your phone by SMS to open your customer account.",
         kind: "success",
       });
     } catch (error) {
@@ -169,6 +191,16 @@ export default function RegisterScreen() {
             placeholderTextColor={Colors.textLight}
             keyboardType="email-address"
             autoCapitalize="none"
+            style={styles.input}
+          />
+
+          <TextInput
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Phone number (e.g. +254712345678)"
+            placeholderTextColor={Colors.textLight}
+            keyboardType="phone-pad"
+            autoComplete="tel"
             style={styles.input}
           />
 

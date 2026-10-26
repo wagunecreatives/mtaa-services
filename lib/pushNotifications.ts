@@ -1,11 +1,13 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { getNotifications } from "./notificationsModule";
 import { supabase } from "./supabase";
 
 export async function registerPushToken(userId: string) {
   if (Platform.OS === "web" || !Device.isDevice || (Platform.OS !== "android" && Platform.OS !== "ios")) return null;
+  const Notifications = getNotifications();
+  if (!Notifications) return null;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "Service updates",
@@ -26,6 +28,8 @@ export async function registerPushToken(userId: string) {
 
 export async function unregisterCurrentPushToken() {
   if (Platform.OS === "web" || !Device.isDevice || (Platform.OS !== "android" && Platform.OS !== "ios")) return;
+  const Notifications = getNotifications();
+  if (!Notifications) return;
   const permission = await Notifications.getPermissionsAsync();
   if (permission.status !== "granted") return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
@@ -41,7 +45,7 @@ export async function unregisterCurrentPushToken() {
 export async function setPushPreference(userId: string, enabled: boolean) {
   if (enabled) {
     const token = await registerPushToken(userId);
-    if (!token) throw new Error("Push alerts require notification permission on a physical iOS or Android device.");
+    if (!token) throw new Error("Push alerts require notification permission on a physical device and are unavailable in Expo Go on Android.");
   }
   const { error } = await supabase.from("notification_preferences").upsert({
     user_id: userId,

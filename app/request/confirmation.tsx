@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { Image } from "expo-image";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,12 +13,36 @@ import {
 } from "react-native";
 
 import { Colors } from "../../constants/Colors";
+import { RequestProgress } from "../../components/RequestProgress";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRequestDraft } from "../../contexts/RequestDraftContext";
 import { supabase } from "../../lib/supabase";
 
 type CachedCategory = { id: string; name: string };
 const categoryCacheKey = (slug: string) => `mtaa.category.v1.${slug}`;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+async function uploadRequestPhotos(userId: string, submissionId: string, photos: string[]) {
+  const paths: string[] = [];
+  for (const [index, uri] of photos.entries()) {
+    const response = await fetch(uri);
+    if (!response.ok) throw new Error("A selected photo could not be read. Remove it and try again.");
+    const blob = await response.blob();
+    if (blob.size > MAX_PHOTO_BYTES) throw new Error("Request photos must be 5 MB or smaller.");
+    const contentType = (blob.type || response.headers.get("content-type") || "").split(";")[0].toLowerCase();
+    const extensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+    const extension = extensions[contentType];
+    if (!extension) throw new Error("Request photos must be JPEG, PNG, or WebP images.");
+
+    const path = `${userId}/${submissionId}/${index}.${extension}`;
+    const { error } = await supabase.storage
+      .from("service-request-photos")
+      .upload(path, blob, { contentType, upsert: true });
+    if (error) throw error;
+    paths.push(path);
+  }
+  return paths;
+}
 
 async function findCategory(slug: string): Promise<CachedCategory> {
   const { data, error } = await supabase
@@ -95,13 +120,16 @@ export default function ConfirmationScreen() {
         throw new Error("We couldn't confirm that your request was saved. Retry safely.");
       }
 
+      const photoPaths = await uploadRequestPhotos(user.id, submissionId, draft.photos);
+      const { error: photosError } = await supabase.rpc("set_service_request_photos", {
+        p_request_id: requestId,
+        p_storage_paths: photoPaths,
+      });
+      if (photosError) throw photosError;
+
       // Clear local draft only after the server confirms the request ID.
       reset();
-      Alert.alert(
-        "Request sent",
-        "Your request has been saved. We'll look for nearby providers and notify you when someone responds.",
-        [{ text: "OK", onPress: () => router.replace("/(customer)") }]
-      );
+      router.replace({ pathname: "/request/success", params: { requestId } });
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       console.warn("Request submission failed; draft retained for retry", error);
@@ -120,7 +148,7 @@ export default function ConfirmationScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.step}>Step 5 of 5</Text>
+      <RequestProgress step={5} />
       <Text style={styles.title}>Review your request</Text>
       <Text style={styles.subtitle}>
         Make sure everything looks right before sending. Your draft is saved on this phone.
@@ -142,7 +170,7 @@ export default function ConfirmationScreen() {
 
       <View style={styles.row}>
         <Text style={styles.label}>Category</Text>
-        <Text style={styles.value}>{draft.category ?? "—"}</Text>
+        <Text style={styles.value}>{draft.categoryName || draft.category?.replaceAll("-", " ") || "—"}</Text>
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>Description</Text>
@@ -160,6 +188,16 @@ export default function ConfirmationScreen() {
         <Text style={styles.label}>Urgency</Text>
         <Text style={styles.value}>{draft.urgency ? urgencyLabel : "—"}</Text>
       </View>
+      {draft.photos.length ? (
+        <View style={styles.row}>
+          <Text style={styles.label}>Photos</Text>
+          <View style={styles.photoList}>
+            {draft.photos.map((uri, index) => (
+              <Image key={`${uri}-${index}`} source={{ uri }} style={styles.photoPreview} contentFit="cover" />
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.back} onPress={() => router.back()} disabled={submitting}>
@@ -184,8 +222,7 @@ export default function ConfirmationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, paddingTop: 64, backgroundColor: Colors.background, flexGrow: 1 },
-  step: { fontSize: 13, fontWeight: "700", color: Colors.primary, letterSpacing: 0.5 },
+  container: { padding: 20, paddingTop: 54, paddingBottom: 30, backgroundColor: "#F4F8FD", flexGrow: 1 },
   title: { marginTop: 10, fontSize: 26, fontWeight: "800", color: Colors.text },
   subtitle: { marginTop: 6, marginBottom: 20, fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
   notice: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, marginBottom: 12, borderRadius: 12, backgroundColor: Colors.backgroundSecondary },
@@ -194,14 +231,16 @@ const styles = StyleSheet.create({
   errorTitle: { fontSize: 15, fontWeight: "800", color: Colors.text },
   errorText: { fontSize: 14, lineHeight: 20, color: Colors.text },
   errorHint: { fontSize: 12, lineHeight: 18, color: Colors.textSecondary },
-  row: { padding: 16, marginBottom: 10, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, backgroundColor: Colors.backgroundSecondary },
+  row: { padding: 15, marginBottom: 10, borderWidth: 1, borderColor: "#E8EEF5", borderRadius: 16, backgroundColor: "#FFFFFF" },
   locationDetail: { marginTop: 5, color: Colors.textSecondary, fontSize: 13 },
   label: { fontSize: 12, fontWeight: "700", color: Colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase" },
   value: { marginTop: 6, fontSize: 16, fontWeight: "600", color: Colors.text },
+  photoList: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  photoPreview: { width: 72, height: 72, borderRadius: 10, backgroundColor: Colors.border },
   footer: { flexDirection: "row", gap: 12, marginTop: "auto", paddingTop: 24 },
   back: { flex: 1, minHeight: 54, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border, borderRadius: 14 },
   backText: { fontSize: 16, fontWeight: "700", color: Colors.text },
-  next: { flex: 2, minHeight: 54, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: Colors.primary },
+  next: { flex: 2, minHeight: 54, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#087BFA" },
   nextText: { fontSize: 16, fontWeight: "700", color: Colors.textInverse },
   disabled: { opacity: 0.6 },
 });

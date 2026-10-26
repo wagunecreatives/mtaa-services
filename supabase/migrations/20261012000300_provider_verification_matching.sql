@@ -78,7 +78,7 @@ $$;
 -- Drop the obsolete three-argument routine so clients cannot accidentally call
 -- the old implementation that assumes nonexistent columns.
 drop function if exists public.admin_review_provider_application(uuid, text, text);
-create function public.admin_review_provider_application(
+create or replace function public.admin_review_provider_application(
   p_application_id uuid,
   p_decision text,
   p_notes text,
@@ -167,7 +167,7 @@ grant execute on function public.admin_review_provider_application(uuid,text,tex
 
 -- A provider can only reach Verified after an administrator confirms the phone.
 drop function if exists public.admin_set_provider_status(uuid, text, text);
-create function public.admin_set_provider_status(
+create or replace function public.admin_set_provider_status(
   p_provider_id uuid,
   p_status text,
   p_reason text,

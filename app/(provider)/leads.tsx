@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { RouteScaffold } from "../../components/RouteScaffold";
 import { Colors } from "../../constants/Colors";
@@ -20,6 +20,7 @@ export default function ProviderLeadsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [responseDetails, setResponseDetails] = useState<Record<string, { message: string; quote: string; arrival: string }>>({});
   const load = useCallback(async () => {
     try {
       const { data, error: loadError } = await supabase.rpc("get_provider_leads");
@@ -41,20 +42,31 @@ export default function ProviderLeadsScreen() {
     if (params.notificationId) void supabase.rpc("mark_notification_read", { p_notification_id: params.notificationId });
   }, [params.notificationId]);
 
-  const accept = async (lead: Lead) => {
+  const respond = async (lead: Lead) => {
     if (busyId) return;
+    const details = responseDetails[lead.request_id] ?? { message: "", quote: "", arrival: "" };
+    const quotedPrice = details.quote.trim() ? Number(details.quote) : null;
+    const estimatedArrival = details.arrival.trim() ? Number(details.arrival) : null;
+    if (quotedPrice !== null && (!Number.isFinite(quotedPrice) || quotedPrice < 0)) {
+      Alert.alert("Check your quote", "Enter a valid non-negative price.");
+      return;
+    }
+    if (estimatedArrival !== null && (!Number.isInteger(estimatedArrival) || estimatedArrival < 0)) {
+      Alert.alert("Check your arrival estimate", "Enter a whole number of minutes.");
+      return;
+    }
     setBusyId(lead.request_id);
     try {
       const { error: responseError } = await supabase.rpc("respond_to_service_request", {
         p_request_id: lead.request_id,
-        p_message: "I can help with this request and am available to discuss the details.",
-        p_quoted_price: null,
-        p_estimated_arrival_minutes: null,
+        p_message: details.message.trim() || "I can help with this request and am available to discuss the details.",
+        p_quoted_price: quotedPrice,
+        p_estimated_arrival_minutes: estimatedArrival,
       });
-      if (responseError) Alert.alert("Could not accept request", responseError.message);
+      if (responseError) Alert.alert("Could not send response", responseError.message);
       else await load();
     } catch (responseError) {
-      Alert.alert("Could not accept request", responseError instanceof Error ? responseError.message : "Check your connection and try again.");
+      Alert.alert("Could not send response", responseError instanceof Error ? responseError.message : "Check your connection and try again.");
     } finally { setBusyId(null); }
   };
 
@@ -89,10 +101,50 @@ export default function ProviderLeadsScreen() {
       <Text style={styles.label}>Distance</Text>
       <Text style={styles.text}>{lead.distance_km !== null ? `${lead.distance_km.toFixed(1)} km` : "Within your selected service area"}</Text>
       {lead.response_id
-        ? <Text style={styles.accepted}>Customer contacted</Text>
+        ? <Text style={styles.accepted}>Response sent · waiting for the customer to choose a provider</Text>
         : <View style={styles.actions}>
-          <TouchableOpacity style={styles.acceptButton} disabled={busyId !== null} onPress={() => void accept(lead)}>
-            <Text style={styles.buttonText}>{busyId === lead.request_id ? "Accepting…" : "ACCEPT"}</Text>
+          <View style={styles.responseFields}>
+            <Text style={styles.label}>Message (optional)</Text>
+            <TextInput
+              value={responseDetails[lead.request_id]?.message ?? ""}
+              onChangeText={(message) => setResponseDetails((current) => ({
+                ...current,
+                [lead.request_id]: { message, quote: current[lead.request_id]?.quote ?? "", arrival: current[lead.request_id]?.arrival ?? "" },
+              }))}
+              placeholder="Add a note for the customer"
+              multiline
+              maxLength={2000}
+              textAlignVertical="top"
+              style={[styles.input, styles.messageInput]}
+              accessibilityLabel="Optional response message"
+            />
+            <Text style={styles.label}>Quote in KES (optional)</Text>
+            <TextInput
+              value={responseDetails[lead.request_id]?.quote ?? ""}
+              onChangeText={(quote) => setResponseDetails((current) => ({
+                ...current,
+                [lead.request_id]: { message: current[lead.request_id]?.message ?? "", quote, arrival: current[lead.request_id]?.arrival ?? "" },
+              }))}
+              placeholder="Your price"
+              keyboardType="decimal-pad"
+              style={styles.input}
+              accessibilityLabel="Optional quote"
+            />
+            <Text style={styles.label}>Arrival estimate (optional)</Text>
+            <TextInput
+              value={responseDetails[lead.request_id]?.arrival ?? ""}
+              onChangeText={(arrival) => setResponseDetails((current) => ({
+                ...current,
+                [lead.request_id]: { message: current[lead.request_id]?.message ?? "", quote: current[lead.request_id]?.quote ?? "", arrival },
+              }))}
+              placeholder="Minutes"
+              keyboardType="number-pad"
+              style={styles.input}
+              accessibilityLabel="Optional arrival estimate in minutes"
+            />
+          </View>
+          <TouchableOpacity style={styles.acceptButton} disabled={busyId !== null} onPress={() => void respond(lead)}>
+            <Text style={styles.buttonText}>{busyId === lead.request_id ? "Sending…" : "SEND RESPONSE"}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.declineButton} disabled={busyId !== null} onPress={() => decline(lead)}>
             <Text style={styles.declineText}>DECLINE</Text>
@@ -111,9 +163,12 @@ const styles = StyleSheet.create({
   text: { color: Colors.text, fontSize: 15, lineHeight: 21 },
   muted: { color: Colors.textSecondary, fontSize: 14, lineHeight: 20 },
   accepted: { color: Colors.success, fontWeight: "800", paddingTop: 8 },
-  actions: { flexDirection: "row", gap: 10, marginTop: 8 },
-  acceptButton: { flex: 1, minHeight: 48, borderRadius: 11, justifyContent: "center", alignItems: "center", backgroundColor: Colors.primary },
-  declineButton: { flex: 1, minHeight: 48, borderRadius: 11, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Colors.error },
+  actions: { gap: 10, marginTop: 8 },
+  responseFields: { gap: 7 },
+  input: { minHeight: 46, paddingHorizontal: 12, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, backgroundColor: Colors.background, color: Colors.text, fontSize: 15 },
+  messageInput: { minHeight: 76, paddingVertical: 10 },
+  acceptButton: { minHeight: 48, borderRadius: 11, justifyContent: "center", alignItems: "center", backgroundColor: Colors.primary },
+  declineButton: { minHeight: 48, borderRadius: 11, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Colors.error },
   buttonText: { color: "#fff", fontWeight: "800" },
   declineText: { color: Colors.error, fontWeight: "800" },
 });
