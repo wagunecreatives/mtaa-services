@@ -25,6 +25,16 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Supabase phone verification
+
+New accounts provide a phone number in international format (for example, `+254712345678`) and verify it by SMS after confirming their email and signing in. Supabase Auth generates the six-digit OTP. The local Supabase configuration sets a 60-second resend interval.
+
+For Supabase projects, configure an SMS provider under **Authentication → Providers → Phone**, enable phone confirmations, set the SMS OTP expiry to **300 seconds**, and set the SMS send interval to at least **60 seconds**. The installed local Supabase CLI version does not expose the SMS OTP expiry setting in `config.toml`, so set it in the hosted project's Auth settings; the SMS provider must also be configured before signup verification can deliver codes. Apply the repository migrations before using signup or provider onboarding.
+
+Provider accounts are selected at signup. After phone verification, providers complete their business, service, and area setup; the profile is activated without administrator approval.
+
+Customer service requests can include up to three optional JPEG, PNG, or WebP photos (5 MB each). The `service-request-photos` private Supabase Storage bucket and participant-only photo access are configured by the service-request-photos migration.
+
 ## Get a fresh project
 
 When you're ready, run:

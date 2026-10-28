@@ -1,2 +1,7 @@
 [functions.send-notification]
 verify_jwt = false
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = true
+max_frequency = "60s"

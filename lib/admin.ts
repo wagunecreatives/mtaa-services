@@ -4,6 +4,7 @@ export type AdminSection =
   | "providers"
   | "applications"
   | "customers"
+  | "account_reviews"
   | "requests"
   | "reports"
   | "categories"
@@ -32,6 +33,7 @@ export const adminApi = {
   reviewApplication: (id: string, decision: "approved" | "rejected", notes: string, phoneVerified: boolean) =>
     call<boolean>("admin_review_provider_application", { p_application_id: id, p_decision: decision, p_notes: notes, p_phone_verified: phoneVerified }),
   customers: (search: string) => call<AdminRecord[]>("admin_search_customers", { p_search: search || null }),
+  accountReviews: (status: string) => call<AdminRecord[]>("admin_list_account_review_requests", { p_status: status || null }),
   requests: (status: string) => call<AdminRecord[]>("admin_list_requests", { p_status: status || null }),
   reports: async (status: string) => {
     const [legacy, userReports] = await Promise.all([
@@ -44,8 +46,10 @@ export const adminApi = {
   categories: () => call<AdminRecord[]>("admin_list_categories"),
   areas: () => call<AdminRecord[]>("admin_list_platform_areas"),
   audit: () => call<AdminRecord[]>("admin_list_audit", { p_limit: 100 }),
-  setCustomerActive: (id: string, active: boolean, reason: string) =>
-    call<boolean>("admin_set_customer_active", { p_customer_id: id, p_active: active, p_reason: reason }),
+  setUserActive: (id: string, active: boolean, reason: string) =>
+    call<boolean>("admin_set_user_active", { p_user_id: id, p_active: active, p_reason: reason }),
+  reviewAccountRequest: (id: string, decision: "approved" | "denied", notes: string) =>
+    call<boolean>("admin_review_account_request", { p_request_id: id, p_decision: decision, p_notes: notes }),
   setProviderStatus: (id: string, status: string, reason: string, phoneVerified: boolean | null) =>
     call<boolean>("admin_set_provider_status", { p_provider_id: id, p_status: status, p_reason: reason, p_phone_verified: phoneVerified }),
   saveCategory: (value: { id: string | null; name: string; slug: string; description: string; icon: string; active: boolean; sortOrder: number }) =>

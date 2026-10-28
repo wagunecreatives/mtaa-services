@@ -36,6 +36,8 @@ export interface Profile {
   account_type: AccountType;
   onboarding_completed: boolean;
   email_verified: boolean;
+  phone_verified: boolean;
+  phone_verification_required: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -57,11 +59,16 @@ interface AuthContextValue {
 
   resendSignupConfirmation: (email: string) => Promise<{ error: AuthResultError | null }>;
 
+  requestPasswordReset: (email: string) => Promise<{ error: AuthResultError | null }>;
+
+  updatePassword: (password: string) => Promise<{ error: AuthResultError | null }>;
+
   signUp: (
     email: string,
     password: string,
     fullName: string,
-    accountType: AccountType
+    accountType: AccountType,
+    phone: string
   ) => Promise<{ error: AuthResultError | null }>;
 
   signOut: () => Promise<{ error: Error | null }>;
@@ -143,7 +150,7 @@ export function AuthProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         if (!mounted) return;
 
         setSession(nextSession);
@@ -154,6 +161,8 @@ export function AuthProvider({
           setLoading(false);
           return;
         }
+
+        if (event === "SIGNED_IN") setLoading(true);
 
         setTimeout(() => {
           if (mounted) {
@@ -183,6 +192,10 @@ export function AuthProvider({
         email,
         password,
       });
+
+    if (data.user && !error) {
+      await loadProfile(data.user.id);
+    }
 
     return {
       user: data?.user ?? null,
@@ -216,11 +229,45 @@ export function AuthProvider({
     };
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const emailRedirectTo = `${Linking.createURL(
+      "/auth/callback",
+      { scheme: "mtaaservices" }
+    )}?flow=recovery`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: emailRedirectTo,
+    });
+
+    return {
+      error: error
+        ? Object.assign(new Error(error.message), {
+            code: error.code,
+            status: error.status,
+          })
+        : null,
+    };
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+
+    return {
+      error: error
+        ? Object.assign(new Error(error.message), {
+            code: error.code,
+            status: error.status,
+          })
+        : null,
+    };
+  };
+
   const signUp = async (
     email: string,
     password: string,
     fullName: string,
-    accountType: AccountType
+    accountType: AccountType,
+    phone: string
   ) => {
     // Deep link back into the app after email confirmation
     const emailRedirectTo = Linking.createURL(
@@ -237,6 +284,7 @@ export function AuthProvider({
           data: {
             full_name: fullName,
             account_type: accountType,
+            phone_verification_number: phone,
           },
         },
       });
@@ -272,6 +320,8 @@ export function AuthProvider({
         loading,
         signIn,
         resendSignupConfirmation,
+        requestPasswordReset,
+        updatePassword,
         signUp,
         signOut,
         refreshProfile,

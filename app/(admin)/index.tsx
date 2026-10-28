@@ -13,7 +13,7 @@ const metrics: [string, string][] = [
 ];
 const sections = [
   ["Applications", "applications"], ["Providers", "providers"], ["Customers", "customers"],
-  ["Requests & matching", "requests"], ["Reports & disputes", "reports"], ["Reviews", "reviews"],
+  ["Requests & matching", "requests"], ["Reports & disputes", "reports"], ["Account review requests", "account_reviews"], ["Reviews", "reviews"],
   ["Categories", "categories"], ["Service areas", "areas"], ["Audit trail", "audit"],
 ] as const;
 
