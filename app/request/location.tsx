@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -39,6 +38,8 @@ export default function LocationScreen() {
   const [serviceAreas, setServiceAreas] = useState<ServiceArea[]>([]);
   const [areasLoading, setAreasLoading] = useState(true);
   const [areasError, setAreasError] = useState<string | null>(null);
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -74,6 +75,8 @@ export default function LocationScreen() {
   };
 
   const selectServiceArea = (area: ServiceArea) => {
+    setLocationMessage(null);
+    setLocationError(null);
     update({
       areaName: area.area_name,
       county: area.county,
@@ -83,29 +86,36 @@ export default function LocationScreen() {
     });
   };
 
-  const useCurrentLocation = async () => {
+  const handleUseCurrentLocation = async () => {
+    if (loading) return;
+    setLocationMessage(null);
+    setLocationError(null);
     try {
       setLoading(true);
 
-      const { status } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission denied",
-          "We need location access to find providers near you."
-        );
-        return;
+      if (Platform.OS !== "web") {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setLocationError("Allow location access in your device settings, or enter your location manually.");
+          return;
+        }
       }
 
       const pos = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
 
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      });
+      let place: Location.LocationGeocodedAddress | undefined;
+      if (Platform.OS !== "web") {
+        try {
+          [place] = await Location.reverseGeocodeAsync({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          });
+        } catch (geocodeError) {
+          console.warn("Could not look up the current location address", geocodeError);
+        }
+      }
 
       const formatted = place
         ? [place.name, place.street, place.city, place.region]
@@ -113,8 +123,12 @@ export default function LocationScreen() {
             .join(", ")
         : `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
 
-      const areaName = place?.district || place?.name || place?.city || "";
-      const county = place?.subregion || place?.region || "";
+      const areaName = place
+        ? place.district || place.name || place.city || ""
+        : draft.areaName;
+      const county = place
+        ? place.subregion || place.region || ""
+        : draft.county;
 
       update({
         latitude: pos.coords.latitude,
@@ -123,9 +137,23 @@ export default function LocationScreen() {
         areaName,
         county,
       });
+      if (!place) {
+        setLocationMessage(
+          Platform.OS === "web"
+            ? "Your GPS position was captured. Choose a neighborhood above or enter the county and neighborhood below; GPS coordinates will also help match nearby providers."
+            : "Your GPS position was captured, but its address could not be looked up. Choose a neighborhood above or enter the county and neighborhood below."
+        );
+      }
     } catch (err) {
-      console.error(err);
-      Alert.alert("Location error", "Couldn't get your location.");
+      console.warn("Could not get the current location", err);
+      const message = err instanceof Error ? err.message : "";
+      setLocationError(
+        /permission|denied/i.test(message)
+          ? "Location permission was denied. Allow location access in your browser or device settings, or enter your location manually."
+          : Platform.OS === "web"
+            ? "Could not get your location. Check that this page is using HTTPS and allow location access in your browser, or enter your location manually."
+            : "Could not get your location. Check that location services are enabled, or enter your location manually."
+      );
     } finally {
       setLoading(false);
     }
@@ -191,12 +219,16 @@ export default function LocationScreen() {
       <TextInput
         style={styles.input}
         value={draft.county}
-        onChangeText={(county) => update({
-          county,
-          address: [draft.areaName, county].filter(Boolean).join(", "),
-          latitude: null,
-          longitude: null,
-        })}
+        onChangeText={(county) => {
+          setLocationMessage(null);
+          setLocationError(null);
+          update({
+            county,
+            address: [draft.areaName, county].filter(Boolean).join(", "),
+            latitude: null,
+            longitude: null,
+          });
+        }}
         placeholder="e.g. Kiambu, Ruiru"
         placeholderTextColor={Colors.textSecondary}
       />
@@ -204,12 +236,16 @@ export default function LocationScreen() {
       <TextInput
         style={styles.input}
         value={draft.areaName}
-        onChangeText={(areaName) => update({
-          areaName,
-          address: [areaName, draft.county].filter(Boolean).join(", "),
-          latitude: null,
-          longitude: null,
-        })}
+        onChangeText={(areaName) => {
+          setLocationMessage(null);
+          setLocationError(null);
+          update({
+            areaName,
+            address: [areaName, draft.county].filter(Boolean).join(", "),
+            latitude: null,
+            longitude: null,
+          });
+        }}
         placeholder="e.g. Membley"
         placeholderTextColor={Colors.textSecondary}
       />
@@ -217,11 +253,14 @@ export default function LocationScreen() {
       {draft.latitude !== null && draft.longitude !== null ? (
         <Text style={styles.coordinates}>Coordinates: {draft.latitude.toFixed(6)}, {draft.longitude.toFixed(6)}</Text>
       ) : null}
+      {locationMessage ? <Text style={styles.locationMessage} accessibilityLiveRegion="polite">{locationMessage}</Text> : null}
+      {locationError ? <Text style={styles.locationError} accessibilityLiveRegion="assertive">{locationError}</Text> : null}
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={useCurrentLocation}
+        onPress={() => void handleUseCurrentLocation()}
         disabled={loading}
+        accessibilityRole="button"
       >
         {loading ? (
           <ActivityIndicator color={Colors.textInverse} />
@@ -300,6 +339,8 @@ const styles = StyleSheet.create({
   hint: { marginTop: 10, color: Colors.textSecondary, fontSize: 13 },
   manualHint: { marginTop: -3, marginBottom: 2, color: Colors.textSecondary, fontSize: 13, lineHeight: 19 },
   coordinates: { marginTop: 8, color: Colors.textSecondary, fontSize: 12 },
+  locationMessage: { marginTop: 8, color: Colors.primary, fontSize: 13, lineHeight: 19 },
+  locationError: { marginTop: 8, color: Colors.error, fontSize: 13, lineHeight: 19 },
   areaLoader: { paddingVertical: 12 },
   areaChoices: { gap: 8, paddingBottom: 4 },
   areaChoice: { minHeight: 48, justifyContent: "center", paddingHorizontal: 13, paddingVertical: 7, borderWidth: 1, borderColor: "#E8EEF5", borderRadius: 14, backgroundColor: "#FFFFFF" },

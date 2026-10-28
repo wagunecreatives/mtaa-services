@@ -73,12 +73,22 @@ async function findCategory(slug: string): Promise<CachedCategory> {
   );
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message;
+    if (typeof message === "string") return message;
+  }
+  return "";
+}
+
 export default function ConfirmationScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { draft, reset, submissionId, ready } = useRequestDraft();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestSaved, setRequestSaved] = useState(false);
 
   const submit = async () => {
     if (submitting || !ready) return;
@@ -101,6 +111,8 @@ export default function ConfirmationScreen() {
 
     setSubmitting(true);
     setSubmitError(null);
+    setRequestSaved(false);
+    let requestCommitted = false;
     try {
       const category = await findCategory(draft.category);
       const { data: requestId, error } = await supabase.rpc("create_service_request", {
@@ -120,21 +132,27 @@ export default function ConfirmationScreen() {
         throw new Error("We couldn't confirm that your request was saved. Retry safely.");
       }
 
-      const photoPaths = await uploadRequestPhotos(user.id, submissionId, draft.photos);
-      const { error: photosError } = await supabase.rpc("set_service_request_photos", {
-        p_request_id: requestId,
-        p_storage_paths: photoPaths,
-      });
-      if (photosError) throw photosError;
+      requestCommitted = true;
+      setRequestSaved(true);
+      if (draft.photos.length > 0) {
+        const photoPaths = await uploadRequestPhotos(user.id, submissionId, draft.photos);
+        const { error: photosError } = await supabase.rpc("set_service_request_photos", {
+          p_request_id: requestId,
+          p_storage_paths: photoPaths,
+        });
+        if (photosError) throw photosError;
+      }
 
       // Clear local draft only after the server confirms the request ID.
       reset();
       router.replace({ pathname: "/request/success", params: { requestId } });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
+      const message = getErrorMessage(error);
       console.warn("Request submission failed; draft retained for retry", error);
       setSubmitError(
-        /network|fetch|timeout|offline|connection|reach the service list/i.test(message)
+        requestCommitted
+          ? "Your request was sent, but its photos couldn't be attached. Your details are saved. Tap Retry to finish; it uses the same request ID."
+          : /network|fetch|timeout|offline|connection|reach the service list/i.test(message)
           ? "Your internet connection seems unavailable or slow. Your request is saved on this phone. Check your connection and tap Retry; you won't create a duplicate."
           : message || "We couldn't confirm the request was sent. Your details are saved. Tap Retry to safely check again."
       );
@@ -163,7 +181,10 @@ export default function ConfirmationScreen() {
 
       {submitError ? (
         <View style={styles.errorBox} accessibilityRole="alert">
-          <Text style={styles.errorTitle}>Couldn&apos;t confirm submission</Text>          <Text style={styles.errorText}>{submitError}</Text>
+          <Text style={styles.errorTitle}>
+            {requestSaved ? "Request sent" : "Couldn&apos;t confirm submission"}
+          </Text>
+          <Text style={styles.errorText}>{submitError}</Text>
           <Text style={styles.errorHint}>Keep this screen open if possible. Retry uses the same request ID.</Text>
         </View>
       ) : null}
