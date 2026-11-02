@@ -18,6 +18,7 @@ export default function ProviderLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="jobs" />
+      <Stack.Screen name="messages" />
       <Stack.Screen name="leads" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="settings" />

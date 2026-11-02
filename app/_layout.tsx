@@ -92,6 +92,16 @@ function NotificationNavigation() {
         return;
       }
 
+      if (eventType === "new_message" && jobId) {
+        const providerMessage = data.screen === "/(provider)/messages"
+          || data.screen === "/(provider)/jobs";
+        router.push({
+          pathname: providerMessage ? "/(provider)/messages" : "/(customer)/messages",
+          params: { jobId },
+        } as never);
+        return;
+      }
+
       // Navigate to the destination encoded in the notification payload.
       switch (data.screen) {
         case "/(provider)/leads":
@@ -111,6 +121,20 @@ function NotificationNavigation() {
               ...(jobId ? { jobId } : {}),
               ...(notificationId ? { notificationId } : {}),
             },
+          });
+          break;
+
+        case "/(provider)/messages":
+          router.push({
+            pathname: "/(provider)/messages" as never,
+            params: jobId ? { jobId } : {},
+          });
+          break;
+
+        case "/(customer)/messages":
+          router.push({
+            pathname: "/(customer)/messages",
+            params: jobId ? { jobId } : {},
           });
           break;
 

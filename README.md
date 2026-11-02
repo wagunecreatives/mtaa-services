@@ -35,6 +35,8 @@ Provider accounts are selected at signup. After phone verification, providers co
 
 Customer service requests can include up to three optional JPEG, PNG, or WebP photos (5 MB each). The `service-request-photos` private Supabase Storage bucket and participant-only photo access are configured by the service-request-photos migration.
 
+Provider onboarding progress is saved per signed-in provider on the device and can be resumed after restarting the app. Selected image URIs may need to be chosen again after a restart. Customer requests sent without connectivity are kept in a local queue and automatically retried when connectivity returns while the confirmation screen is open, or when that screen is reopened. The queued request stays bound to the account that created it and uses a stable idempotency key.
+
 ## Get a fresh project
 
 When you're ready, run:

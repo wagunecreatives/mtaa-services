@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import * as Network from "expo-network";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -85,15 +86,20 @@ function getErrorMessage(error: unknown): string {
 export default function ConfirmationScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { draft, reset, submissionId, ready } = useRequestDraft();
+  const { draft, reset, submissionId, queued, queuedForUserId, enqueue, dequeue, ready } = useRequestDraft();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [requestSaved, setRequestSaved] = useState(false);
+  const submissionInProgress = useRef(false);
 
-  const submit = async () => {
-    if (submitting || !ready) return;
+  const submit = useCallback(async () => {
+    if (submissionInProgress.current || !ready) return;
     if (!user) {
       Alert.alert("Not signed in", "Please sign in and try again.");
+      return;
+    }
+    if (queued && queuedForUserId && queuedForUserId !== user.id) {
+      setSubmitError("This request was queued for a different account. Sign in with that account to send it.");
       return;
     }
     if (!draft.category) {
@@ -109,11 +115,21 @@ export default function ConfirmationScreen() {
       return;
     }
 
+    submissionInProgress.current = true;
     setSubmitting(true);
     setSubmitError(null);
     setRequestSaved(false);
     let requestCommitted = false;
+    let queuedOnDevice = false;
     try {
+      const network = await Network.getNetworkStateAsync();
+      if (network.isConnected === false || network.isInternetReachable === false) {
+        await enqueue(user.id);
+        queuedOnDevice = true;
+        setSubmitError("Your request is saved on this phone and will be sent automatically when internet returns.");
+        return;
+      }
+
       const category = await findCategory(draft.category);
       const { data: requestId, error } = await supabase.rpc("create_service_request", {
         p_category_id: category.id,
@@ -149,17 +165,57 @@ export default function ConfirmationScreen() {
     } catch (error) {
       const message = getErrorMessage(error);
       console.warn("Request submission failed; draft retained for retry", error);
-      setSubmitError(
-        requestCommitted
-          ? "Your request was sent, but its photos couldn't be attached. Your details are saved. Tap Retry to finish; it uses the same request ID."
-          : /network|fetch|timeout|offline|connection|reach the service list/i.test(message)
-          ? "Your internet connection seems unavailable or slow. Your request is saved on this phone. Check your connection and tap Retry; you won't create a duplicate."
-          : message || "We couldn't confirm the request was sent. Your details are saved. Tap Retry to safely check again."
-      );
+      const networkFailure = /network|fetch|timeout|offline|connection|reach the service list/i.test(message);
+      if (networkFailure) {
+        try {
+          await enqueue(user.id);
+          queuedOnDevice = true;
+        } catch (queueError) {
+          console.error("Could not save request to the offline queue", queueError);
+        }
+      } else if (queued) {
+        try {
+          await dequeue();
+        } catch (queueError) {
+          console.error("Could not remove request from the offline queue", queueError);
+        }
+      }
+      const errorMessage = requestCommitted
+        ? queuedOnDevice
+          ? "Your request was sent, but its photos couldn't be attached. The details are saved; photo upload will retry when internet returns."
+          : "Your request was sent, but its photos couldn't be attached. Your details are saved. Tap Retry to finish; it uses the same request ID."
+        : networkFailure
+        ? queuedOnDevice
+          ? "Your request is saved on this phone and will be sent automatically when internet returns. You can also retry now; it won't create a duplicate."
+          : "We couldn't reach the service, and couldn't save an offline queue entry. Your request draft is still saved; retry when connected."
+        : message || "We couldn't confirm the request was sent. Your details are saved. Tap Retry to safely check again.";
+      setSubmitError(errorMessage);
     } finally {
+      submissionInProgress.current = false;
       setSubmitting(false);
     }
-  };
+  }, [dequeue, draft, enqueue, queued, queuedForUserId, ready, reset, router, submissionId, user]);
+
+  useEffect(() => {
+    if (!queued || !ready || !user || queuedForUserId !== user.id) return;
+
+    let active = true;
+    const retryWhenOnline = (isOnline: boolean | undefined) => {
+      if (active && isOnline === true) void submit();
+    };
+    const subscription = Network.addNetworkStateListener((state) => {
+      retryWhenOnline(state.isInternetReachable ?? state.isConnected);
+    });
+
+    void Network.getNetworkStateAsync()
+      .then((state) => retryWhenOnline(state.isInternetReachable ?? state.isConnected))
+      .catch((error) => console.warn("Could not check connectivity for queued request", error));
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [queued, queuedForUserId, ready, submit, user]);
 
   const urgencyLabel =
     draft.urgency === "now" ? "Right now" : draft.urgency === "today" ? "Today" : "This week";
@@ -182,10 +238,10 @@ export default function ConfirmationScreen() {
       {submitError ? (
         <View style={styles.errorBox} accessibilityRole="alert">
           <Text style={styles.errorTitle}>
-            {requestSaved ? "Request sent" : "Couldn&apos;t confirm submission"}
+            {requestSaved ? "Request sent" : queued ? "Request queued offline" : "Couldn&apos;t confirm submission"}
           </Text>
           <Text style={styles.errorText}>{submitError}</Text>
-          <Text style={styles.errorHint}>Keep this screen open if possible. Retry uses the same request ID.</Text>
+          <Text style={styles.errorHint}>Your draft and request ID are saved locally, so retrying cannot create a duplicate.</Text>
         </View>
       ) : null}
 
@@ -234,7 +290,7 @@ export default function ConfirmationScreen() {
           {submitting ? (
             <ActivityIndicator color={Colors.textInverse} />
           ) : (
-            <Text style={styles.nextText}>{submitError ? "Retry" : "Send request"}</Text>
+            <Text style={styles.nextText}>{queued ? "Retry now" : submitError ? "Retry" : "Send request"}</Text>
           )}
         </TouchableOpacity>
       </View>

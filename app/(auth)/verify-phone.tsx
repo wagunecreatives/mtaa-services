@@ -15,6 +15,7 @@ export default function VerifyPhoneScreen() {
   });
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(true);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -43,12 +44,20 @@ export default function VerifyPhoneScreen() {
       setPhone(normalizedPhone);
       setCode("");
       setCodeSent(true);
+      setEditingPhone(false);
       setResendSeconds(60);
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Could not send the SMS code.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const changePhone = () => {
+    setEditingPhone(true);
+    setCodeSent(false);
+    setCode("");
+    setError("");
   };
 
   const verifyCode = async () => {
@@ -96,6 +105,16 @@ export default function VerifyPhoneScreen() {
 
   return (
     <RouteScaffold eyebrow="Phone verification" title="Verify your phone" description="We’ll send a one-time code by SMS. The code expires after five minutes.">
+      <TouchableOpacity
+        accessibilityRole="button"
+        style={styles.backButton}
+        onPress={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/(auth)/login");
+        }}
+      >
+        <Text style={styles.backText}>Back</Text>
+      </TouchableOpacity>
       {!!error && <Text style={styles.error}>{error}</Text>}
       <Text style={styles.label}>Phone number</Text>
       <TextInput
@@ -104,8 +123,9 @@ export default function VerifyPhoneScreen() {
           setPhone(value);
           setCodeSent(false);
           setCode("");
-          setResendSeconds(0);
+          setEditingPhone(true);
         }}
+        editable={editingPhone}
         keyboardType="phone-pad"
         autoComplete="tel"
         placeholder="+254712345678"
@@ -113,9 +133,22 @@ export default function VerifyPhoneScreen() {
         style={styles.input}
         accessibilityLabel="Phone number"
       />
+      {codeSent && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={busy}
+          style={styles.changeButton}
+          onPress={changePhone}
+        >
+          <Text style={styles.changeText}>Change number</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity disabled={busy || resendSeconds > 0} style={[styles.button, (busy || resendSeconds > 0) && styles.disabled]} onPress={() => void sendCode()}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{codeSent ? resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend code" : "Send verification code"}</Text>}
       </TouchableOpacity>
+      {!codeSent && resendSeconds > 0 && (
+        <Text style={styles.message}>You can send a code to this number in {resendSeconds}s.</Text>
+      )}
       {codeSent && <>
         <Text style={styles.message}>Enter the six-digit code sent to {normalizePhoneNumber(phone)}. If it expires, request another code.</Text>
         <TextInput
@@ -138,11 +171,15 @@ export default function VerifyPhoneScreen() {
 }
 
 const styles = StyleSheet.create({
+  backButton: { alignSelf: "flex-start", minHeight: 40, justifyContent: "center", paddingHorizontal: 4 },
+  backText: { color: Colors.primary, fontWeight: "700" },
   label: { color: Colors.text, fontWeight: "700" },
   input: { minHeight: 48, paddingHorizontal: 12, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, color: Colors.text, backgroundColor: Colors.backgroundSecondary },
   button: { minHeight: 48, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: Colors.primary },
   buttonText: { color: "#fff", fontWeight: "800" },
   message: { color: Colors.textSecondary, lineHeight: 21 },
+  changeButton: { alignSelf: "flex-start", minHeight: 40, justifyContent: "center", paddingHorizontal: 4 },
+  changeText: { color: Colors.primary, fontWeight: "700" },
   error: { color: Colors.error },
   disabled: { opacity: 0.55 },
 });

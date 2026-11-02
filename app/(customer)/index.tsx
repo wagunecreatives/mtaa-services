@@ -519,6 +519,7 @@ export default function CustomerHome() {
           { label: "Home", icon: "home", route: "/(customer)" },
           { label: "Services", icon: "grid-outline", route: "/(customer)/services" },
           { label: "Requests", icon: "document-text-outline", route: "/(customer)/requests" },
+          { label: "Messages", icon: "chatbubble-ellipses-outline", route: "/(customer)/messages" },
           { label: "Profile", icon: "person-outline", route: "/(customer)/profile" },
         ] as const).map((item, index) => (
           <TouchableOpacity

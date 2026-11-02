@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase";
 
 type Notice = { id: string; event_type: string; request_id: string | null; title: string; body: string; data: { screen?: string; requestId?: string; jobId?: string }; read_at: string | null; created_at: string };
 export default function NotificationsScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const [items, setItems] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,12 @@ export default function NotificationsScreen() {
     setItems((current) => current.map((item) => item.id === notice.id ? { ...item, read_at: item.read_at ?? new Date().toISOString() } : item));
     if (notice.event_type === "report_update") return;
     if (notice.event_type === "review_reminder" && notice.data?.jobId) router.push({ pathname: "/(customer)/review", params: { jobId: notice.data.jobId } });
+    else if (notice.event_type === "new_message" && notice.data?.jobId) router.push({
+      pathname: profile?.role === "provider" || profile?.account_type === "provider"
+        ? "/(provider)/messages"
+        : "/(customer)/messages",
+      params: { jobId: notice.data.jobId },
+    } as never);
     else if (notice.data?.screen === "/(provider)/leads") router.push({ pathname: "/(provider)/leads", params: { requestId: notice.data.requestId ?? notice.request_id ?? undefined, notificationId: notice.id } });
     else if (notice.data?.screen === "/(provider)/jobs") router.push({ pathname: "/(provider)/jobs", params: { jobId: notice.data.jobId } });
     else if (notice.data?.screen === "/(provider)/monetization") router.push("/(provider)/monetization" as never);

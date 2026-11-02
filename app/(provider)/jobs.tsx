@@ -104,6 +104,12 @@ export default function ProviderJobsScreen() {
           county: job.county,
         }}
       />
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={() => router.push({ pathname: "/(provider)/messages" as never, params: { jobId: job.job_id } })}
+      >
+        <Text style={styles.primaryText}>Message customer</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.cancelButton} onPress={() => confirmBlockUser(job.customer_id, job.customer_name || "this customer")}>
         <Text style={styles.cancelText}>Block customer</Text>
       </TouchableOpacity>

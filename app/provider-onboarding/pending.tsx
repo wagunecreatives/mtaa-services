@@ -5,19 +5,13 @@ import { Action, OnboardingPage } from "../../components/ProviderOnboardingUI";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../contexts/AuthContext";
 import { useProviderOnboarding } from "../../contexts/ProviderOnboardingContext";
+import { readImageForUpload } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 
 async function uploadAsset(userId: string, uri: string | null, kind: string) {
   if (!uri) return null;
-  const response = await fetch(uri);
-  const bytes = await response.arrayBuffer();
-  const extension = uri.split(".").pop()?.split(/[?#]/)[0]?.toLowerCase() || "jpg";
-  const byExtension: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
-  const contentType = (response.headers.get("content-type") || byExtension[extension] || "").split(";")[0].toLowerCase();
-  if (!(contentType in { "image/jpeg": true, "image/png": true, "image/webp": true })) {
-    throw new Error("Choose a JPEG, PNG, or WebP image.");
-  }
-  if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Images must be 5 MB or smaller.");
+  const { bytes, contentType } = await readImageForUpload(uri, 5 * 1024 * 1024);
+  const extension = contentType === "image/jpeg" ? "jpg" : contentType.slice(6);
   const path = `${userId}/${kind}-${Date.now()}.${extension}`;
   const { error } = await supabase.storage.from("provider-assets").upload(path, bytes, { contentType, upsert: false });
   if (error) throw error;

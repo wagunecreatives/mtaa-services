@@ -27,9 +27,12 @@ export interface RequestDraft {
 interface PersistedRequestDraft {
   draft: RequestDraft;
   submissionId: string;
+  queued?: boolean;
+  queuedForUserId?: string | null;
 }
 
 const STORAGE_KEY = "mtaa.request-draft.v1";
+let persistenceQueue: Promise<void> = Promise.resolve();
 
 const emptyDraft: RequestDraft = {
   category: null,
@@ -76,20 +79,29 @@ async function readPersistedDraft(): Promise<PersistedRequestDraft | null> {
 }
 
 async function persistDraft(value: PersistedRequestDraft): Promise<void> {
-  const raw = JSON.stringify(value);
-  if (Platform.OS === "web") {
-    if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, raw);
-    return;
-  }
-  await SecureStore.setItemAsync(STORAGE_KEY, raw);
+  const write = async () => {
+    const raw = JSON.stringify(value);
+    if (Platform.OS === "web") {
+      if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, raw);
+      return;
+    }
+    await SecureStore.setItemAsync(STORAGE_KEY, raw);
+  };
+  const pendingWrite = persistenceQueue.then(write, write);
+  persistenceQueue = pendingWrite.catch(() => {});
+  await pendingWrite;
 }
 
 
 interface RequestDraftContextValue {
   draft: RequestDraft;
   submissionId: string;
+  queued: boolean;
+  queuedForUserId: string | null;
   ready: boolean;
   update: (patch: Partial<RequestDraft>) => void;
+  enqueue: (userId: string) => Promise<void>;
+  dequeue: () => Promise<void>;
   reset: () => void;
 }
 
@@ -99,6 +111,8 @@ const RequestDraftContext =
 export function RequestDraftProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<RequestDraft>(emptyDraft);
   const [submissionId, setSubmissionId] = useState(createSubmissionId);
+  const [queued, setQueued] = useState(false);
+  const [queuedForUserId, setQueuedForUserId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -108,6 +122,8 @@ export function RequestDraftProvider({ children }: { children: ReactNode }) {
       if (saved) {
         setDraft(saved.draft);
         setSubmissionId(saved.submissionId);
+        setQueued(saved.queued === true);
+        setQueuedForUserId(saved.queuedForUserId ?? null);
       }
       setReady(true);
     });
@@ -118,19 +134,33 @@ export function RequestDraftProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    void persistDraft({ draft, submissionId }).catch((error) => {
+    void persistDraft({ draft, submissionId, queued, queuedForUserId }).catch((error) => {
       console.warn("Could not persist request draft locally", error);
     });
-  }, [draft, submissionId, ready]);
+  }, [draft, submissionId, queued, queuedForUserId, ready]);
 
   const update = (patch: Partial<RequestDraft>) =>
     setDraft((previous) => ({ ...previous, ...patch }));
+
+  const enqueue = async (userId: string) => {
+    await persistDraft({ draft, submissionId, queued: true, queuedForUserId: userId });
+    setQueued(true);
+    setQueuedForUserId(userId);
+  };
+
+  const dequeue = async () => {
+    await persistDraft({ draft, submissionId, queued: false, queuedForUserId: null });
+    setQueued(false);
+    setQueuedForUserId(null);
+  };
 
   const reset = () => {
     // Let the persistence effect replace the old draft atomically with a fresh one.
     // Deleting and writing concurrently could otherwise lose a new draft on slow storage.
     setDraft(emptyDraft);
     setSubmissionId(createSubmissionId());
+    setQueued(false);
+    setQueuedForUserId(null);
   };
 
   if (!ready) {
@@ -144,7 +174,7 @@ export function RequestDraftProvider({ children }: { children: ReactNode }) {
 
   return (
     <RequestDraftContext.Provider
-      value={{ draft, submissionId, ready, update, reset }}
+      value={{ draft, submissionId, queued, queuedForUserId, ready, update, enqueue, dequeue, reset }}
     >
       {children}
     </RequestDraftContext.Provider>

@@ -16,14 +16,24 @@ This checklist is for the Expo Android app. Do not mark a device/network scenari
 ## Request-flow scenarios
 
 - [ ] Start a request, fill every field, force-close the app, reopen, and confirm the draft is restored.
-- [ ] Disable internet before opening the confirmation screen. A clear retryable error appears; the draft is preserved.
-- [ ] Disable internet after tapping Send, then restore it and tap Retry. Confirm exactly one row exists in `service_requests`.
+- [ ] Disable internet before opening the confirmation screen. Tap Send and confirm the request is added to the on-device queue with a clear status.
+- [ ] Restore internet while the confirmation screen is open. Confirm the queued request sends automatically and exactly one row exists in `service_requests`.
+- [ ] Queue a request, force-close and reopen the app, then revisit the confirmation screen. Confirm the queued request retries when connectivity returns.
+- [ ] Sign into a different account while a request is queued. Confirm the queued request is not submitted under the other account.
 - [ ] Tap Send repeatedly while the first submission is in progress. Only one request is created.
 - [ ] Simulate a server commit whose response is lost, then retry with the same client request ID. The RPC returns the original request UUID.
 - [ ] Confirm validation and server rate limits still apply to a genuinely new request ID.
 - [ ] Open Find a service offline after loading it online once. Cached featured providers are shown with a stale-data notice and a retry action.
 - [ ] Open Find a service with no cache and no internet. Show an offline error, not “No featured providers”.
 - [ ] Reconnect and retry. Live results replace the cached results.
+
+## Provider onboarding scenarios
+
+- [ ] Complete part of provider setup, force-close the app, reopen, and confirm the saved business details, selected services, areas, and availability are restored.
+- [ ] Confirm the onboarding start screen offers a resume action and returns to the next incomplete step.
+- [ ] Lose connectivity while loading service categories or suggested areas. Confirm a retry action is available and entered details remain intact.
+- [ ] Lose connectivity during provider submission, restore it, and retry. Confirm the existing provider application is updated rather than duplicated.
+- [ ] Confirm persistence errors are visible and do not claim that setup progress was saved.
 
 ## Permission scenarios
 
@@ -57,4 +67,4 @@ Run the app on an Android emulator and on physical devices. For slow-network tes
 
 ## Current scope / limitation
 
-The request draft is persisted locally, featured providers and service-category lookups have a cache fallback, and request submission uses a stable idempotency key. The app still requires connectivity to create a request on the server; it does not promise to deliver requests while fully offline. Device-specific performance and permission scenarios must be executed in Android Studio / on real phones and are not considered passed merely because the code has been committed.
+Request drafts and queued submissions are persisted locally. A queued request retries when connectivity returns while the confirmation screen is open, or when that screen is reopened; it is scoped to the account that queued it and uses a stable idempotency key. Provider onboarding progress is saved per signed-in provider on the device; selected image URIs may need to be reselected after an app restart. Device-specific performance and permission scenarios must be executed in Android Studio / on real phones and are not considered passed merely because the code has been committed.

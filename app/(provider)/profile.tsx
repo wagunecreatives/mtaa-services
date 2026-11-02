@@ -19,6 +19,7 @@ import { VerifiedBadge } from "../../components/provider/VerifiedBadge";
 import { Colors } from "../../constants/Colors";
 import { BorderRadius, Shadow } from "../../constants/Theme";
 import { useAuth } from "../../contexts/AuthContext";
+import { readImageForUpload } from "../../lib/imageUpload";
 import { supabase } from "../../lib/supabase";
 
 const MAX_PORTFOLIO_IMAGES = 6;
@@ -33,6 +34,7 @@ type ProviderProfile = {
   rating_average: number | null;
   total_reviews: number | null;
   verification_status: string;
+  phone_verified: boolean;
   is_available: boolean;
 };
 
@@ -42,31 +44,20 @@ type PortfolioImage = {
   created_at: string;
 };
 
-async function uploadPortfolioImage(userId: string, uri: string, index: number) {
-  const response = await fetch(uri);
-  if (!response.ok) throw new Error("A selected image could not be read. Please choose it again.");
-
-  const bytes = await response.arrayBuffer();
-  if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error("Images must be 5 MB or smaller.");
-
-  const extensions: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-  };
-  const uriExtension = uri.split(".").pop()?.split(/[?#]/)[0]?.toLowerCase() || "";
-  const extensionMimeTypes: Record<string, string> = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    webp: "image/webp",
-  };
-  const responseContentType = response.headers.get("content-type")?.split(";")[0].toLowerCase() || "";
-  const contentType = extensions[responseContentType]
-    ? responseContentType
-    : extensionMimeTypes[uriExtension] || "";
-  const extension = extensions[contentType];
-  if (!extension) throw new Error("Choose a JPEG, PNG, or WebP image.");
+async function uploadPortfolioImage(
+  userId: string,
+  uri: string,
+  index: number,
+  mimeType?: string | null,
+  fileName?: string | null,
+) {
+  const { bytes, contentType } = await readImageForUpload(
+    uri,
+    MAX_IMAGE_BYTES,
+    mimeType,
+    fileName,
+  );
+  const extension = contentType === "image/jpeg" ? "jpg" : contentType.slice(6);
 
   const path = `${userId}/portfolio-${Date.now()}-${index}.${extension}`;
   const { error } = await supabase.storage.from("provider-assets").upload(path, bytes, {
@@ -84,6 +75,8 @@ export default function ProviderProfileScreen() {
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoMimeType, setPhotoMimeType] = useState<string | null>(null);
+  const [photoFileName, setPhotoFileName] = useState<string | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,7 +90,7 @@ export default function ProviderProfileScreen() {
       const [profileResult, portfolioResult] = await Promise.all([
         supabase
           .from("providers")
-          .select("business_name,bio,phone,whatsapp_number,profile_image_url,rating_average,total_reviews,verification_status,is_available")
+          .select("business_name,bio,phone,phone_verified,whatsapp_number,profile_image_url,rating_average,total_reviews,verification_status,is_available")
           .eq("id", user.id)
           .single(),
         supabase
@@ -115,6 +108,8 @@ export default function ProviderProfileScreen() {
       setBio(provider.bio || "");
       setWhatsapp(provider.whatsapp_number || "");
       setPhotoUri(provider.profile_image_url);
+      setPhotoMimeType(null);
+      setPhotoFileName(null);
       setPortfolio((portfolioResult.data ?? []) as PortfolioImage[]);
       setError("");
     } catch (loadError) {
@@ -141,7 +136,7 @@ export default function ProviderProfileScreen() {
     try {
       let profileImageUrl = profile.profile_image_url;
       if (photoUri && photoUri !== profile.profile_image_url) {
-        const path = await uploadPortfolioImage(user.id, photoUri, 0);
+        const path = await uploadPortfolioImage(user.id, photoUri, 0, photoMimeType, photoFileName);
         uploadedPhotoPath = path;
         profileImageUrl = supabase.storage.from("provider-assets").getPublicUrl(path).data.publicUrl;
       } else if (!photoUri) {
@@ -190,7 +185,12 @@ export default function ProviderProfileScreen() {
         allowsEditing: true,
         quality: 0.8,
       });
-      if (!result.canceled) setPhotoUri(result.assets[0].uri);
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        setPhotoUri(asset.uri);
+        setPhotoMimeType(asset.mimeType ?? null);
+        setPhotoFileName(asset.fileName ?? null);
+      }
     } catch (pickerError) {
       Alert.alert("Photo library unavailable", pickerError instanceof Error ? pickerError.message : "Please try again.");
     }
@@ -210,7 +210,7 @@ export default function ProviderProfileScreen() {
 
       setBusyImage(true);
       for (const [index, asset] of result.assets.entries()) {
-        const path = await uploadPortfolioImage(user.id, asset.uri, index + 1);
+        const path = await uploadPortfolioImage(user.id, asset.uri, index + 1, asset.mimeType, asset.fileName);
         const { data: imageId, error: addError } = await supabase.rpc("add_provider_portfolio_image", {
           p_storage_path: path,
         });
@@ -295,8 +295,9 @@ export default function ProviderProfileScreen() {
             <ProviderAvatar name={displayName} photoUrl={photoUri} size={82} />
             <View style={styles.heroDetails}>
               <Text style={styles.businessName} numberOfLines={2}>{displayName}</Text>
-              <Text style={styles.status}>{profile.verification_status === "verified" ? "Provider active" : profile.verification_status}</Text>
+              <Text style={styles.status}>{profile.verification_status === "verified" ? "Marketplace active" : profile.verification_status}</Text>
               {user?.email_confirmed_at ? <VerifiedBadge /> : null}
+              <Text style={styles.phoneNote}>Email confirmation does not independently verify your identity, qualifications, or business.</Text>
               <Text style={styles.rating}>
                 {profile.rating_average != null ? `${profile.rating_average.toFixed(1)} ★` : "New provider"}
                 {profile.total_reviews ? ` · ${profile.total_reviews} reviews` : ""}
@@ -336,7 +337,7 @@ export default function ProviderProfileScreen() {
               keyboardType="phone-pad"
               maxLength={30}
             />
-            <Text style={styles.phoneNote}>Verified phone: {profile.phone || "Not available"}</Text>
+            <Text style={styles.phoneNote}>SMS-verified phone: {profile.phone_verified ? profile.phone || "Not available" : "Not verified"}</Text>
 
             <Text style={styles.label}>Profile photo</Text>
             <View style={styles.photoActions}>
@@ -345,7 +346,11 @@ export default function ProviderProfileScreen() {
                 <Text style={styles.secondaryButtonText}>{photoUri ? "Change photo" : "Add photo"}</Text>
               </TouchableOpacity>
               {photoUri ? (
-                <TouchableOpacity style={styles.clearPhotoButton} onPress={() => setPhotoUri(null)}>
+                <TouchableOpacity style={styles.clearPhotoButton} onPress={() => {
+                  setPhotoUri(null);
+                  setPhotoMimeType(null);
+                  setPhotoFileName(null);
+                }}>
                   <Text style={styles.clearPhotoText}>Remove</Text>
                 </TouchableOpacity>
               ) : null}

@@ -12,7 +12,7 @@ export default function ProviderOnboardingLayout() {
   if (profile.role !== "provider" && profile.account_type !== "provider") return <Redirect href="/" />;
   if (!user?.email_confirmed_at) return <Redirect href="/(auth)/login" />;
   return (
-    <ProviderOnboardingProvider>
+    <ProviderOnboardingProvider key={user.id} userId={user.id}>
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="business" />

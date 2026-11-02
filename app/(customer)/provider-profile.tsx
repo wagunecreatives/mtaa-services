@@ -136,6 +136,11 @@ export default function CustomerProviderProfileScreen() {
             <Ionicons name="location-outline" size={17} color={Colors.primary} />
             <Text style={styles.metaText}>{params.area || "Service area not listed"}</Text>
           </View>
+          {provider?.email_verified ? (
+            <Text style={styles.verificationNote}>
+              Email confirmation only. MTAA SERVICES has not independently verified this provider’s identity, qualifications, or business.
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -210,6 +215,7 @@ const styles = StyleSheet.create({
   category: { color: Colors.primary, fontSize: 13, fontWeight: "700" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   metaText: { flex: 1, color: Colors.textSecondary, fontSize: 13, fontWeight: "600" },
+  verificationNote: { marginTop: 7, color: Colors.textSecondary, fontSize: 12, lineHeight: 18 },
   section: { gap: 10, padding: 16, borderRadius: BorderRadius.lg, backgroundColor: Colors.backgroundSecondary },
   sectionTitle: { color: Colors.text, fontSize: 17, fontWeight: "800" },
   bio: { color: Colors.textSecondary, fontSize: 15, lineHeight: 22 },

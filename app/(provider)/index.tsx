@@ -17,6 +17,13 @@ const providerActions = [
     tint: Colors.primarySoft,
   },
   {
+    title: "Messages",
+    description: "Continue private conversations about your active service jobs.",
+    icon: "chatbubble-ellipses-outline",
+    route: "/(provider)/messages",
+    tint: Colors.primarySoft,
+  },
+  {
     title: "My jobs",
     description: "Manage assigned work, contact customers, and update job status.",
     icon: "briefcase-outline",
