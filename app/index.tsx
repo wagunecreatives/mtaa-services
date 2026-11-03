@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 export default function Index() {
   const {
     session,
+    user,
     profile,
     loading,
   } = useAuth();
@@ -39,20 +40,42 @@ export default function Index() {
   }
 
   if (!profile.is_active) {
-    return (
-      <Redirect href="/(auth)/welcome" />
-    );
+    return <Redirect href="/account-review" />;
+  }
+
+  if (
+    (profile.role === "provider" || profile.account_type === "provider") &&
+    !user?.email_confirmed_at
+  ) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (
+    profile.account_type !== "provider" &&
+    profile.phone_verification_required &&
+    !profile.phone_verified
+  ) {
+    return <Redirect href="/(auth)/verify-phone" />;
   }
 
   switch (profile.role) {
-    case "customer":
-      return (
-        <Redirect href="/(customer)" />
-      );
-
     case "provider":
+      if (!profile.onboarding_completed) {
+        return <Redirect href="/provider-onboarding" />;
+      }
       return (
         <Redirect href="/(provider)" />
+      );
+
+    case "customer":
+      if (profile.account_type === "provider") {
+        if (!profile.onboarding_completed) {
+          return <Redirect href="/provider-onboarding" />;
+        }
+        return <Redirect href="/(provider)" />;
+      }
+      return (
+        <Redirect href="/(customer)" />
       );
 
     case "admin":

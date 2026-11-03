@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../../constants/Colors";
 import { RouteScaffold } from "../../components/RouteScaffold";
+import { AccountDeletionSection } from "../../components/AccountDeletionSection";
 import { useAuth } from "../../contexts/AuthContext";
 import { registerPushToken, setMatchAlertPreference, setPushPreference } from "../../lib/pushNotifications";
 import { supabase } from "../../lib/supabase";
@@ -43,8 +44,10 @@ export default function ProviderSettingsScreen() {
   return (
     <RouteScaffold eyebrow="Provider" title="Settings" description="Manage your account settings.">
       <TouchableOpacity style={styles.link} onPress={() => router.push("/notifications")}><Text style={styles.linkText}>Notification center</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.link} onPress={() => router.push("/blocked-users" as never)}><Text style={styles.linkText}>Blocked accounts</Text></TouchableOpacity>
       <View style={styles.preference}><View style={styles.preferenceCopy}><Text style={styles.label}>Push notifications</Text><Text style={styles.caption}>Alerts for new matched requests</Text></View><Switch value={pushEnabled} onValueChange={updatePush} disabled={busy} /></View>
       <View style={styles.preference}><View style={styles.preferenceCopy}><Text style={styles.label}>Matched request alerts</Text><Text style={styles.caption}>Show provider leads in push notifications</Text></View><Switch value={matchAlertsEnabled} onValueChange={updateMatchAlerts} disabled={busy} /></View>
+      <AccountDeletionSection />
       <TouchableOpacity style={styles.button} onPress={logout}><Text style={styles.buttonText}>Sign out</Text></TouchableOpacity>
     </RouteScaffold>
   );

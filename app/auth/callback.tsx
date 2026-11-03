@@ -21,6 +21,10 @@ export default function AuthCallbackScreen() {
         const hashParams = new URLSearchParams(parsedUrl.hash.replace(/^#/, ""));
         const params = new URLSearchParams(parsedUrl.search);
         const code = params.get("code");
+        const isPasswordRecovery =
+          params.get("flow") === "recovery" ||
+          params.get("type") === "recovery" ||
+          hashParams.get("type") === "recovery";
         const accessToken = hashParams.get("access_token") ?? params.get("access_token");
         const refreshToken = hashParams.get("refresh_token") ?? params.get("refresh_token");
         const authError = hashParams.get("error_description") ?? params.get("error_description");
@@ -40,7 +44,9 @@ export default function AuthCallbackScreen() {
           throw new Error("The confirmation link is incomplete or has expired.");
         }
 
-        router.replace("/");
+        router.replace(
+          isPasswordRecovery ? "/(auth)/reset-password" : "/"
+        );
       } catch (error) {
         console.error("Email confirmation failed:", error);
         setMessage(error instanceof Error ? error.message : "Email confirmation failed. Please sign in and try again.");

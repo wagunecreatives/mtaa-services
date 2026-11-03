@@ -11,6 +11,7 @@ import * as Linking from "expo-linking";
 
 import { supabase } from "../lib/supabase";
 import { unregisterCurrentPushToken } from "../lib/pushNotifications";
+import { CURRENT_USER_POLICY_VERSION } from "../lib/userPolicy";
 
 export type UserRole =
   | "customer"
@@ -36,6 +37,8 @@ export interface Profile {
   account_type: AccountType;
   onboarding_completed: boolean;
   email_verified: boolean;
+  phone_verified: boolean;
+  phone_verification_required: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -45,6 +48,8 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  userPolicyAccepted: boolean;
+  userPolicyAcceptanceChecked: boolean;
   loading: boolean;
 
   signIn: (
@@ -57,12 +62,19 @@ interface AuthContextValue {
 
   resendSignupConfirmation: (email: string) => Promise<{ error: AuthResultError | null }>;
 
+  requestPasswordReset: (email: string) => Promise<{ error: AuthResultError | null }>;
+
+  updatePassword: (password: string) => Promise<{ error: AuthResultError | null }>;
+
   signUp: (
     email: string,
     password: string,
     fullName: string,
-    accountType: AccountType
+    accountType: AccountType,
+    phone: string
   ) => Promise<{ error: AuthResultError | null }>;
+
+  acceptCurrentUserPolicy: () => Promise<void>;
 
   signOut: () => Promise<{ error: Error | null }>;
 
@@ -86,6 +98,9 @@ export function AuthProvider({
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
+  const [userPolicyAccepted, setUserPolicyAccepted] = useState(false);
+  const [userPolicyAcceptanceChecked, setUserPolicyAcceptanceChecked] = useState(false);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -103,15 +118,32 @@ export function AuthProvider({
       );
 
       setProfile(null);
+      setUserPolicyAccepted(false);
+      setUserPolicyAcceptanceChecked(true);
       return;
     }
 
     setProfile(data as Profile);
+    const { data: acceptance, error: acceptanceError } = await supabase
+      .from("user_policy_acceptances")
+      .select("policy_version")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (acceptanceError) {
+      console.error("Failed to load user policy acceptance:", acceptanceError);
+      setUserPolicyAccepted(false);
+    } else {
+      setUserPolicyAccepted(acceptance?.policy_version === CURRENT_USER_POLICY_VERSION);
+    }
+    setUserPolicyAcceptanceChecked(true);
   };
 
   const refreshProfile = async () => {
     if (!user) {
       setProfile(null);
+      setUserPolicyAccepted(false);
+      setUserPolicyAcceptanceChecked(false);
       return;
     }
 
@@ -143,7 +175,7 @@ export function AuthProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         if (!mounted) return;
 
         setSession(nextSession);
@@ -151,9 +183,14 @@ export function AuthProvider({
 
         if (!nextSession?.user) {
           setProfile(null);
+          setUserPolicyAccepted(false);
+          setUserPolicyAcceptanceChecked(false);
           setLoading(false);
           return;
         }
+
+        setUserPolicyAcceptanceChecked(false);
+        if (event === "SIGNED_IN") setLoading(true);
 
         setTimeout(() => {
           if (mounted) {
@@ -183,6 +220,10 @@ export function AuthProvider({
         email,
         password,
       });
+
+    if (data.user && !error) {
+      await loadProfile(data.user.id);
+    }
 
     return {
       user: data?.user ?? null,
@@ -216,11 +257,45 @@ export function AuthProvider({
     };
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const emailRedirectTo = `${Linking.createURL(
+      "/auth/callback",
+      { scheme: "mtaaservices" }
+    )}?flow=recovery`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: emailRedirectTo,
+    });
+
+    return {
+      error: error
+        ? Object.assign(new Error(error.message), {
+            code: error.code,
+            status: error.status,
+          })
+        : null,
+    };
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+
+    return {
+      error: error
+        ? Object.assign(new Error(error.message), {
+            code: error.code,
+            status: error.status,
+          })
+        : null,
+    };
+  };
+
   const signUp = async (
     email: string,
     password: string,
     fullName: string,
-    accountType: AccountType
+    accountType: AccountType,
+    phone: string
   ) => {
     // Deep link back into the app after email confirmation
     const emailRedirectTo = Linking.createURL(
@@ -237,6 +312,9 @@ export function AuthProvider({
           data: {
             full_name: fullName,
             account_type: accountType,
+            phone_verification_number: phone,
+            user_policy_accepted: true,
+            user_policy_version: CURRENT_USER_POLICY_VERSION,
           },
         },
       });
@@ -249,6 +327,15 @@ export function AuthProvider({
           })
         : null,
     };
+  };
+
+  const acceptCurrentUserPolicy = async () => {
+    const { error } = await supabase.rpc("accept_current_user_policy", {
+      p_policy_version: CURRENT_USER_POLICY_VERSION,
+    });
+    if (error) throw new Error(error.message);
+    setUserPolicyAccepted(true);
+    setUserPolicyAcceptanceChecked(true);
   };
 
   const signOut = async () => {
@@ -269,10 +356,15 @@ export function AuthProvider({
         user,
         session,
         profile,
+        userPolicyAccepted,
+        userPolicyAcceptanceChecked,
         loading,
         signIn,
         resendSignupConfirmation,
+        requestPasswordReset,
+        updatePassword,
         signUp,
+        acceptCurrentUserPolicy,
         signOut,
         refreshProfile,
       }}

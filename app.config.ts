@@ -74,6 +74,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-status-bar',
     [
+      'expo-build-properties',
+      {
+        android: {
+          targetSdkVersion: 36,
+        },
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         backgroundColor: '#208AEF',

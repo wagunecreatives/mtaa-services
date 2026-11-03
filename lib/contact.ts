@@ -9,6 +9,10 @@ export function whatsappUrl(phone: string, message: string): string {
   return `https://wa.me/${normalizeKenyanPhone(phone)}?text=${encodeURIComponent(message)}`;
 }
 
+export function serviceContactMessage(service: string | null | undefined, area: string | null | undefined): string {
+  return `Hello, I found you on MTAA SERVICES. I need help with ${service?.trim() || "a service"} in ${area?.trim() || "my area"}.`;
+}
+
 export function directionsUrl(destination: {
   latitude: number | null;
   longitude: number | null;

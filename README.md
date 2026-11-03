@@ -25,6 +25,44 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Supabase phone verification
+
+New accounts provide a phone number in international format (for example, `+254712345678`) and verify it by SMS after confirming their email and signing in. Supabase Auth generates the six-digit OTP. The local Supabase configuration sets a 60-second resend interval.
+
+For Supabase projects, configure an SMS provider under **Authentication → Providers → Phone**, enable phone confirmations, set the SMS OTP expiry to **300 seconds**, and set the SMS send interval to at least **60 seconds**. The installed local Supabase CLI version does not expose the SMS OTP expiry setting in `config.toml`, so set it in the hosted project's Auth settings; the SMS provider must also be configured before signup verification can deliver codes. Apply the repository migrations before using signup or provider onboarding.
+
+Provider accounts are selected at signup. After phone verification, providers complete their business, service, and area setup; the profile is activated without administrator approval.
+
+Customer service requests can include up to three optional JPEG, PNG, or WebP photos (5 MB each). The `service-request-photos` private Supabase Storage bucket and participant-only photo access are configured by the service-request-photos migration.
+
+Provider onboarding progress is saved per signed-in provider on the device and can be resumed after restarting the app. Selected image URIs may need to be chosen again after a restart. Customer requests sent without connectivity are kept in a local queue and automatically retried when connectivity returns while the confirmation screen is open, or when that screen is reopened. The queued request stays bound to the account that created it and uses a stable idempotency key.
+
+## Account deletion and privacy policy
+
+Customers and providers can permanently delete their accounts from their in-app profile/settings, or request deletion on the public account-deletion page. Web requests are verified through a short-lived link sent to the account email. Deletion anonymizes retained reviews, reports, and dispute submitter references; accounts involved in an active dispute must wait until it is resolved. Associated account data and uploaded files are removed.
+
+The public pages are served by the `account-deletion` Supabase Edge Function:
+
+- Account deletion: `https://acdoxestxgvbnaohphkm.supabase.co/functions/v1/account-deletion`
+- Privacy policy: `https://acdoxestxgvbnaohphkm.supabase.co/functions/v1/account-deletion?view=privacy-policy`
+
+Apply the account-deletion migration and deploy the function before publishing those links:
+
+```bash
+supabase db push --linked
+supabase secrets set --env-file .env --project-ref acdoxestxgvbnaohphkm
+supabase functions deploy account-deletion --project-ref acdoxestxgvbnaohphkm
+```
+
+The deployed function requires a Resend API key and a verified sender address in the Supabase project secrets (`RESEND_API_KEY` and `RESEND_FROM`). The public support and privacy contact is `wagunecreatives57@gmail.com`.
+
+The production EAS profile creates a Play Store Android App Bundle, uses EAS-managed Android signing credentials, and increments the remote Android version code. Verify the app's Android credentials in EAS before building:
+
+```bash
+npx eas-cli credentials --platform android
+npx eas-cli build --platform android --profile production
+```
+
 ## Get a fresh project
 
 When you're ready, run:

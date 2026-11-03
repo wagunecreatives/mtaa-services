@@ -1,18 +1,22 @@
 
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import { router, Stack } from "expo-router";
+import { router, Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import * as Notifications from "expo-notifications";
+import type { Notification } from "expo-notifications";
 
-import { AuthProvider } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { RequestDraftProvider } from "../contexts/RequestDraftContext";
+import { getNotifications } from "../lib/notificationsModule";
 import { supabase } from "../lib/supabase";
 
 /**
  * Configure how notifications appear while the app is in the foreground.
  * expo-notifications presentation handlers are intended for native platforms.
  */
-if (Platform.OS !== "web") {
+const Notifications = getNotifications();
+
+if (Notifications) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -26,18 +30,20 @@ if (Platform.OS !== "web") {
 /**
  * Handles navigation when a user taps a push notification.
  *
- * Web skips the native notification-response APIs to prevent runtime errors.
+ * Unsupported runtimes skip the native notification-response APIs.
  */
 function NotificationNavigation() {
   useEffect(() => {
-    if (Platform.OS === "web") {
+    const Notifications = getNotifications();
+
+    if (Platform.OS === "web" || !Notifications) {
       return;
     }
 
     let isActive = true;
     let lastHandledNotificationKey: string | null = null;
 
-    const navigate = (notification: Notifications.Notification) => {
+    const navigate = (notification: Notification) => {
       if (!isActive) {
         return;
       }
@@ -58,6 +64,10 @@ function NotificationNavigation() {
         typeof data.jobId === "string"
           ? data.jobId
           : undefined;
+      const eventType =
+        typeof data.eventType === "string"
+          ? data.eventType
+          : undefined;
 
       // Avoid processing the same notification twice.
       const notificationKey =
@@ -75,6 +85,21 @@ function NotificationNavigation() {
         void supabase.rpc("mark_notification_read", {
           p_notification_id: notificationId,
         });
+      }
+
+      if (eventType === "review_reminder" && jobId) {
+        router.push({ pathname: "/(customer)/review", params: { jobId } });
+        return;
+      }
+
+      if (eventType === "new_message" && jobId) {
+        const providerMessage = data.screen === "/(provider)/messages"
+          || data.screen === "/(provider)/jobs";
+        router.push({
+          pathname: providerMessage ? "/(provider)/messages" : "/(customer)/messages",
+          params: { jobId },
+        } as never);
+        return;
       }
 
       // Navigate to the destination encoded in the notification payload.
@@ -96,6 +121,20 @@ function NotificationNavigation() {
               ...(jobId ? { jobId } : {}),
               ...(notificationId ? { notificationId } : {}),
             },
+          });
+          break;
+
+        case "/(provider)/messages":
+          router.push({
+            pathname: "/(provider)/messages" as never,
+            params: jobId ? { jobId } : {},
+          });
+          break;
+
+        case "/(customer)/messages":
+          router.push({
+            pathname: "/(customer)/messages",
+            params: jobId ? { jobId } : {},
           });
           break;
 
@@ -138,29 +177,52 @@ function NotificationNavigation() {
   return null;
 }
 
+function UserPolicyGate() {
+  const { user, loading, userPolicyAccepted, userPolicyAcceptanceChecked } = useAuth();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (
+      !loading &&
+      user &&
+      userPolicyAcceptanceChecked &&
+      !userPolicyAccepted &&
+      pathname !== "/user-policy-acceptance"
+    ) {
+      router.replace("/user-policy-acceptance");
+    }
+  }, [loading, pathname, user, userPolicyAccepted, userPolicyAcceptanceChecked]);
+
+  return null;
+}
+
 /**
  * Application root layout.
  */
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NotificationNavigation />
+      <RequestDraftProvider>
+        <NotificationNavigation />
+        <UserPolicyGate />
 
-      <StatusBar style="auto" />
+        <StatusBar style="auto" />
 
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="(customer)" />
-        <Stack.Screen name="(provider)" />
-        <Stack.Screen name="(admin)" />
-        <Stack.Screen name="provider-onboarding" />
-        <Stack.Screen name="request" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="dispute" />
-        <Stack.Screen name="report" />
-      </Stack>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="account-review" />
+          <Stack.Screen name="user-policy-acceptance" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(customer)" />
+          <Stack.Screen name="(provider)" />
+          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="provider-onboarding" />
+          <Stack.Screen name="request" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="dispute" />
+          <Stack.Screen name="report" />
+        </Stack>
+      </RequestDraftProvider>
     </AuthProvider>
   );
 }

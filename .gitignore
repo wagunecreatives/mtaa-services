@@ -46,3 +46,9 @@ example
 # generated native folders
 /ios
 /android
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Local TypeScript runtime-validation plans and caches
+/.tsupgrader/

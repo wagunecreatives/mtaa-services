@@ -2,6 +2,9 @@ import { useState } from "react";
 
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -9,13 +12,18 @@ import {
   View,
 } from "react-native";
 
+import { GlassView } from "expo-glass-effect";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
 
 import { Colors } from "../../constants/Colors";
+import { getPrivacyPolicyUrl } from "../../lib/accountDeletion";
+import { getUserPolicyUrl } from "../../lib/userPolicy";
 import {
   useAuth,
   type AccountType,
 } from "../../contexts/AuthContext";
+import { normalizePhoneNumber } from "../../lib/phone";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -28,6 +36,9 @@ export default function RegisterScreen() {
   const [email, setEmail] =
     useState("");
 
+  const [phone, setPhone] =
+    useState("");
+
   const [password, setPassword] =
     useState("");
 
@@ -36,6 +47,7 @@ export default function RegisterScreen() {
 
   const [loading, setLoading] =
     useState(false);
+  const [acceptedUserPolicy, setAcceptedUserPolicy] = useState(false);
   const [notice, setNotice] = useState<{
     title: string;
     message: string;
@@ -57,6 +69,15 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!acceptedUserPolicy) {
+      setNotice({
+        title: "Agreement required",
+        message: "Please read and accept the MTAA SERVICES Terms of Use and User Policy before creating an account.",
+        kind: "error",
+      });
+      return;
+    }
+
     if (password.length < 6) {
       setNotice({
         title: "Weak password",
@@ -64,6 +85,16 @@ export default function RegisterScreen() {
         kind: "error",
       });
 
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!normalizedPhone) {
+      setNotice({
+        title: "Check your phone number",
+        message: "Enter a valid number in international format, for example +254712345678.",
+        kind: "error",
+      });
       return;
     }
 
@@ -75,16 +106,24 @@ export default function RegisterScreen() {
         email.trim(),
         password,
         fullName.trim(),
-        accountType
+        accountType,
+        normalizedPhone
       );
 
       if (error) {
         const timedOut = error.status === 504 || /504|timed out|timeout/i.test(error.message);
+        const confirmationEmailFailed = /error sending confirmation email/i.test(error.message);
         setNotice({
-          title: timedOut ? "Signup timed out" : "Registration failed",
+          title: timedOut
+            ? "Signup timed out"
+            : confirmationEmailFailed
+              ? "Confirmation email unavailable"
+              : "Registration failed",
           message: timedOut
             ? "The server did not respond in time. Your account may still have been created, so check your inbox before trying again. If you can sign in but need verification, use the resend option on the login screen."
-            : error.message,
+            : confirmationEmailFailed
+              ? "We couldn't send your verification email. Your account may already have been created. Check your inbox, or try signing in and use the resend option. If this continues, please contact support."
+              : error.message,
           kind: "error",
         });
 
@@ -94,8 +133,8 @@ export default function RegisterScreen() {
       setNotice({
         title: "Account created",
         message: accountType === "provider"
-          ? "Check your inbox for a confirmation email. Verify your address, then sign in to continue your provider application."
-          : "Check your inbox for a confirmation email. Verify your address, then sign in to open your customer account.",
+          ? "Check your inbox to confirm your email, then sign in to complete your provider setup. Your phone number is collected as unverified contact information."
+          : "Check your inbox to confirm your email, then sign in and verify your phone by SMS to open your customer account.",
         kind: "success",
       });
     } catch (error) {
@@ -112,150 +151,271 @@ export default function RegisterScreen() {
     }
   };
 
+  const openPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(getPrivacyPolicyUrl());
+    } catch (error) {
+      setNotice({
+        title: "Privacy policy unavailable",
+        message: error instanceof Error ? error.message : "Could not open the privacy policy.",
+        kind: "error",
+      });
+    }
+  };
+
+  const openUserPolicy = async () => {
+    try {
+      await Linking.openURL(getUserPolicyUrl());
+    } catch (error) {
+      setNotice({
+        title: "Terms unavailable",
+        message: error instanceof Error ? error.message : "Could not open the user terms.",
+        kind: "error",
+      });
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        Create Account
-      </Text>
-
-      <Text style={styles.subtitle}>
-        Join MTAA SERVICES
-      </Text>
-
-      {notice && (
-        <View style={[styles.notice, notice.kind === "success" && styles.successNotice]}>
-          <Text style={styles.noticeTitle}>{notice.title}</Text>
-          <Text style={styles.noticeMessage}>{notice.message}</Text>
-          {notice.kind === "success" && (
-            <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-              <Text style={styles.noticeAction}>Continue to Login</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      <TextInput
-        value={fullName}
-        onChangeText={setFullName}
-        placeholder="Full name"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        style={styles.input}
-      />
-
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email address"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={styles.input}
-      />
-
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        placeholderTextColor={
-          Colors.textLight
-        }
-        secureTextEntry
-        style={styles.input}
-      />
-
-      <Text style={styles.sectionTitle}>
-        What do you want to do?
-      </Text>
-
-      <TouchableOpacity
-        style={[
-          styles.option,
-          accountType === "customer" &&
-            styles.optionSelected,
-        ]}
-        onPress={() =>
-          setAccountType("customer")
-        }
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={styles.backgroundOrbLarge} />
+      <View style={styles.backgroundOrbSmall} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text
-          style={[
-            styles.optionTitle,
-            accountType === "customer" &&
-              styles.optionTitleSelected,
-          ]}
-        >
-          Find Services
-        </Text>
-
-        <Text style={styles.optionDescription}>
-          I need trusted local service providers.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.option,
-          accountType === "provider" &&
-            styles.optionSelected,
-        ]}
-        onPress={() =>
-          setAccountType("provider")
-        }
-      >
-        <Text
-          style={[
-            styles.optionTitle,
-            accountType === "provider" &&
-              styles.optionTitleSelected,
-          ]}
-        >
-          Offer Services
-        </Text>
-
-        <Text style={styles.optionDescription}>
-          I provide services and want customers.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator
-            color={Colors.textInverse}
+        <View style={styles.container}>
+          <GlassView
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            glassEffectStyle="clear"
           />
-        ) : (
-          <Text style={styles.buttonText}>
+          <Text style={styles.title}>
             Create Account
           </Text>
-        )}
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() =>
-          router.push("/(auth)/login")
-        }
-      >
-        <Text style={styles.loginText}>
-          Already have an account? Login
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.subtitle}>
+            Join MTAA SERVICES
+          </Text>
+
+          {notice && (
+            <View style={[styles.notice, notice.kind === "success" && styles.successNotice]}>
+              <Text style={styles.noticeTitle}>{notice.title}</Text>
+              <Text style={styles.noticeMessage}>{notice.message}</Text>
+              {notice.kind === "success" && (
+                <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
+                  <Text style={styles.noticeAction}>Continue to Login</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          <TextInput
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder="Full name"
+            placeholderTextColor={Colors.textLight}
+            style={styles.input}
+          />
+
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email address"
+            placeholderTextColor={Colors.textLight}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
+          />
+
+          <TextInput
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Phone number (e.g. +254712345678)"
+            placeholderTextColor={Colors.textLight}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            style={styles.input}
+          />
+
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor={Colors.textLight}
+            secureTextEntry
+            style={styles.input}
+          />
+
+          <Text style={styles.sectionTitle}>
+            What do you want to do?
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.option,
+              accountType === "customer" &&
+                styles.optionSelected,
+            ]}
+            onPress={() =>
+              setAccountType("customer")
+            }
+          >
+            <Text
+              style={[
+                styles.optionTitle,
+                accountType === "customer" &&
+                  styles.optionTitleSelected,
+              ]}
+            >
+              Find Services
+            </Text>
+
+            <Text style={styles.optionDescription}>
+              I need trusted local service providers.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.option,
+              accountType === "provider" &&
+                styles.optionSelected,
+            ]}
+            onPress={() =>
+              setAccountType("provider")
+            }
+          >
+            <Text
+              style={[
+                styles.optionTitle,
+                accountType === "provider" &&
+                  styles.optionTitleSelected,
+              ]}
+            >
+              Offer Services
+            </Text>
+
+            <Text style={styles.optionDescription}>
+              I provide services and want customers.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.termsAcceptance}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: acceptedUserPolicy }}
+            onPress={() => setAcceptedUserPolicy((accepted) => !accepted)}
+          >
+            <Text style={[styles.checkbox, acceptedUserPolicy && styles.checkboxChecked]}>
+              {acceptedUserPolicy ? "✓" : ""}
+            </Text>
+            <Text style={styles.termsAcceptanceText}>
+              I agree to the MTAA SERVICES Terms of Use and User Policy.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.privacyLink}
+            accessibilityRole="link"
+            onPress={openUserPolicy}
+          >
+            <Text style={styles.privacyLinkText}>Read the Terms of Use and User Policy</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.privacyLink}
+            accessibilityRole="link"
+            onPress={openPrivacyPolicy}
+          >
+            <Text style={styles.privacyLinkText}>Read the MTAA SERVICES Privacy Policy</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator
+                color={Colors.textInverse}
+              />
+            ) : (
+              <Text style={styles.buttonText}>
+                Create Account
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/(auth)/login")
+            }
+          >
+            <Text style={styles.loginText}>
+              Already have an account? Login
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardContainer: {
     flex: 1,
+    backgroundColor: "#EEF4FF",
+    overflow: "hidden",
+  },
+
+  backgroundOrbLarge: {
+    position: "absolute",
+    top: -92,
+    right: -78,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "rgba(59, 130, 246, 0.16)",
+  },
+
+  backgroundOrbSmall: {
+    position: "absolute",
+    bottom: -72,
+    left: -64,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: "rgba(245, 158, 11, 0.13)",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
+    paddingHorizontal: 22,
+    paddingVertical: 32,
+  },
+
+  container: {
+    position: "relative",
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 500,
     paddingHorizontal: 24,
-    backgroundColor: Colors.background,
+    paddingVertical: 30,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    overflow: "hidden",
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
   },
 
   title: {
@@ -362,6 +522,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 12,
     backgroundColor: Colors.primary,
+  },
+  privacyLink: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  termsAcceptance: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    textAlign: "center",
+    textAlignVertical: "center",
+    color: Colors.textInverse,
+    overflow: "hidden",
+  },
+  checkboxChecked: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  termsAcceptanceText: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  privacyLinkText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   buttonText: {

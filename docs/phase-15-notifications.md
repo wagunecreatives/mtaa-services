@@ -34,3 +34,11 @@ The migration adds `notifications` and `service_requests` to `supabase_realtime`
 5. Update request status and confirm the customer's request screen refreshes and an in-app status notification appears.
 
 The Expo push service and Supabase project credentials are external to this repository, so actual device delivery requires the deployment setup above.
+
+## Phase 27 event coverage
+
+Apply migrations through `20261022000100_phase_27_notification_improvements.sql`. The notification event set covers `new_request`, `provider_accepted`, `provider_response`, `new_message`, `job_reminder`, `job_completed`, `review_reminder`, `subscription_expiry`, and `featured_listing_expiry`. Database triggers create request, response, job, message, completion, and review notices in the same transaction as the triggering change; scheduled reminders and expiry transitions are handled by `process_due_platform_notifications()`.
+
+Provider response pushes include the service category and area (for example, “A plumber near Membley is available for your request.”). Push payloads include the notification event and job ID so tapping a review reminder opens the review form and job-related notices can navigate to the relevant job/request.
+
+The outbox webhook and push credentials above must be configured for push delivery. In addition, configure a trusted hourly scheduler to invoke `process_due_platform_notifications()` with the service role. Until that scheduler is configured, job reminders and subscription/featured listing expiry notices and transitions will not run automatically. The scheduled function is idempotent; the outbox event keys prevent duplicate notices.

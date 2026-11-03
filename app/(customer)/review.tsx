@@ -35,9 +35,8 @@ export default function JobReviewScreen() {
     } finally { setSaving(false); }
   };
 
-  return <RouteScaffold eyebrow="Customer" title="Review your provider" description="Your feedback helps customers choose trusted providers.">
+  return <RouteScaffold eyebrow="Customer" title="How was your experience?" description="Your feedback becomes part of this provider's reputation and helps other customers choose with confidence.">
     {!jobId ? <Text style={styles.error}>This review link is missing a job.</Text> : <>
-      <Text style={styles.label}>Your rating</Text>
       <View style={styles.stars} accessibilityRole="radiogroup" accessibilityLabel="Rate the provider from one to five stars">
         {[1, 2, 3, 4, 5].map((value) => <TouchableOpacity key={value} onPress={() => setRating(value)} accessibilityRole="radio" accessibilityState={{ selected: rating === value }} accessibilityLabel={`${value} star${value === 1 ? "" : "s"}`}>
           <Text style={[styles.star, value <= rating && styles.selectedStar]}>★</Text>
@@ -53,13 +52,14 @@ export default function JobReviewScreen() {
         <Text style={[styles.checkbox, traits[key] && styles.checked]}>{traits[key] ? "✓" : ""}</Text>
         <Text style={styles.traitText}>{label}</Text>
       </TouchableOpacity>)}
+      <Text style={styles.label}>Write review</Text>
       <TextInput
         value={reviewText}
         onChangeText={setReviewText}
         maxLength={2000}
         multiline
         textAlignVertical="top"
-        placeholder="Share a few details about your experience (optional)"
+        placeholder="Share a few details about your experience..."
         placeholderTextColor={Colors.textSecondary}
         style={styles.input}
         accessibilityLabel="Review text"
