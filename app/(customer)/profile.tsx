@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Colors } from "../../constants/Colors";
 import { RouteMessage, RouteScaffold } from "../../components/RouteScaffold";
+import { AccountDeletionSection } from "../../components/AccountDeletionSection";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function CustomerProfileScreen() {
@@ -14,6 +15,7 @@ export default function CustomerProfileScreen() {
     <RouteScaffold eyebrow="Customer" title="Your profile" description="Your account information.">
       <RouteMessage>Name: {profile?.full_name || "Not set"}{"\n"}Email: {user?.email || "Not available"}{"\n"}Phone: {profile?.phone || "Not set"}</RouteMessage>
       <TouchableOpacity style={styles.link} onPress={() => router.push("/blocked-users" as never)}><Text style={styles.linkText}>Blocked accounts</Text></TouchableOpacity>
+      <AccountDeletionSection />
       <TouchableOpacity style={styles.button} onPress={logout}><Text style={styles.buttonText}>Sign out</Text></TouchableOpacity>
     </RouteScaffold>
   );

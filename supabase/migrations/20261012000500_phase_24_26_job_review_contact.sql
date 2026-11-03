@@ -8,7 +8,7 @@ alter table public.reviews
   add column if not exists provider_helpful boolean not null default false;
 
 drop function if exists public.submit_job_review(uuid, integer, text);
-create function public.submit_job_review(
+create or replace function public.submit_job_review(
   p_job_id uuid,
   p_rating integer,
   p_review_text text,

@@ -37,6 +37,32 @@ Customer service requests can include up to three optional JPEG, PNG, or WebP ph
 
 Provider onboarding progress is saved per signed-in provider on the device and can be resumed after restarting the app. Selected image URIs may need to be chosen again after a restart. Customer requests sent without connectivity are kept in a local queue and automatically retried when connectivity returns while the confirmation screen is open, or when that screen is reopened. The queued request stays bound to the account that created it and uses a stable idempotency key.
 
+## Account deletion and privacy policy
+
+Customers and providers can permanently delete their accounts from their in-app profile/settings, or request deletion on the public account-deletion page. Web requests are verified through a short-lived link sent to the account email. Deletion anonymizes retained reviews, reports, and dispute submitter references; accounts involved in an active dispute must wait until it is resolved. Associated account data and uploaded files are removed.
+
+The public pages are served by the `account-deletion` Supabase Edge Function:
+
+- Account deletion: `https://acdoxestxgvbnaohphkm.supabase.co/functions/v1/account-deletion`
+- Privacy policy: `https://acdoxestxgvbnaohphkm.supabase.co/functions/v1/account-deletion?view=privacy-policy`
+
+Apply the account-deletion migration and deploy the function before publishing those links:
+
+```bash
+supabase db push --linked
+supabase secrets set --env-file .env --project-ref acdoxestxgvbnaohphkm
+supabase functions deploy account-deletion --project-ref acdoxestxgvbnaohphkm
+```
+
+The deployed function requires a Resend API key and a verified sender address in the Supabase project secrets (`RESEND_API_KEY` and `RESEND_FROM`). The public support and privacy contact is `wagunecreatives57@gmail.com`.
+
+The production EAS profile creates a Play Store Android App Bundle, uses EAS-managed Android signing credentials, and increments the remote Android version code. Verify the app's Android credentials in EAS before building:
+
+```bash
+npx eas-cli credentials --platform android
+npx eas-cli build --platform android --profile production
+```
+
 ## Get a fresh project
 
 When you're ready, run:

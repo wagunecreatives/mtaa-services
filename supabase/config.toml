@@ -1,6 +1,9 @@
 [functions.send-notification]
 verify_jwt = false
 
+[functions.account-deletion]
+verify_jwt = false
+
 [auth.sms]
 enable_signup = false
 enable_confirmations = true

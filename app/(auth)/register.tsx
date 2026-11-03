@@ -14,8 +14,10 @@ import {
 
 import { GlassView } from "expo-glass-effect";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
 
 import { Colors } from "../../constants/Colors";
+import { getPrivacyPolicyUrl } from "../../lib/accountDeletion";
 import {
   useAuth,
   type AccountType,
@@ -135,6 +137,18 @@ export default function RegisterScreen() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(getPrivacyPolicyUrl());
+    } catch (error) {
+      setNotice({
+        title: "Privacy policy unavailable",
+        message: error instanceof Error ? error.message : "Could not open the privacy policy.",
+        kind: "error",
+      });
     }
   };
 
@@ -265,6 +279,14 @@ export default function RegisterScreen() {
             <Text style={styles.optionDescription}>
               I provide services and want customers.
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.privacyLink}
+            accessibilityRole="link"
+            onPress={openPrivacyPolicy}
+          >
+            <Text style={styles.privacyLinkText}>Read the MTAA SERVICES Privacy Policy</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -455,6 +477,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 12,
     backgroundColor: Colors.primary,
+  },
+  privacyLink: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  privacyLinkText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   buttonText: {
