@@ -18,6 +18,7 @@ import * as Linking from "expo-linking";
 
 import { Colors } from "../../constants/Colors";
 import { getPrivacyPolicyUrl } from "../../lib/accountDeletion";
+import { getUserPolicyUrl } from "../../lib/userPolicy";
 import {
   useAuth,
   type AccountType,
@@ -46,6 +47,7 @@ export default function RegisterScreen() {
 
   const [loading, setLoading] =
     useState(false);
+  const [acceptedUserPolicy, setAcceptedUserPolicy] = useState(false);
   const [notice, setNotice] = useState<{
     title: string;
     message: string;
@@ -64,6 +66,15 @@ export default function RegisterScreen() {
         kind: "error",
       });
 
+      return;
+    }
+
+    if (!acceptedUserPolicy) {
+      setNotice({
+        title: "Agreement required",
+        message: "Please read and accept the MTAA SERVICES Terms of Use and User Policy before creating an account.",
+        kind: "error",
+      });
       return;
     }
 
@@ -147,6 +158,18 @@ export default function RegisterScreen() {
       setNotice({
         title: "Privacy policy unavailable",
         message: error instanceof Error ? error.message : "Could not open the privacy policy.",
+        kind: "error",
+      });
+    }
+  };
+
+  const openUserPolicy = async () => {
+    try {
+      await Linking.openURL(getUserPolicyUrl());
+    } catch (error) {
+      setNotice({
+        title: "Terms unavailable",
+        message: error instanceof Error ? error.message : "Could not open the user terms.",
         kind: "error",
       });
     }
@@ -279,6 +302,28 @@ export default function RegisterScreen() {
             <Text style={styles.optionDescription}>
               I provide services and want customers.
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.termsAcceptance}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: acceptedUserPolicy }}
+            onPress={() => setAcceptedUserPolicy((accepted) => !accepted)}
+          >
+            <Text style={[styles.checkbox, acceptedUserPolicy && styles.checkboxChecked]}>
+              {acceptedUserPolicy ? "✓" : ""}
+            </Text>
+            <Text style={styles.termsAcceptanceText}>
+              I agree to the MTAA SERVICES Terms of Use and User Policy.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.privacyLink}
+            accessibilityRole="link"
+            onPress={openUserPolicy}
+          >
+            <Text style={styles.privacyLinkText}>Read the Terms of Use and User Policy</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -482,6 +527,34 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: "center",
     alignItems: "center",
+  },
+  termsAcceptance: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    textAlign: "center",
+    textAlignVertical: "center",
+    color: Colors.textInverse,
+    overflow: "hidden",
+  },
+  checkboxChecked: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  termsAcceptanceText: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: 14,
+    lineHeight: 20,
   },
   privacyLinkText: {
     color: Colors.primary,

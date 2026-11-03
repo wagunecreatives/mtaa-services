@@ -32,7 +32,8 @@ using (
   or provider_id = (select auth.uid())
 );
 
-create or replace function public.get_provider_public_profile(p_provider_id uuid)
+drop function if exists public.get_provider_public_profile(uuid);
+create function public.get_provider_public_profile(p_provider_id uuid)
 returns table (
   provider_id uuid,
   business_name text,

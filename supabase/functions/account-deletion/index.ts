@@ -98,7 +98,7 @@ const accountDeletionPage = `<!doctype html>
     </form>
   </div>
   <p id="notice" class="notice" role="status" aria-live="polite"></p>
-  <div class="links"><a href="?view=privacy-policy">Privacy policy</a><a href="mailto:${supportEmail}">Contact support</a></div>
+  <div class="links"><a href="?view=privacy-policy">Privacy policy</a><a href="?view=terms-of-use">Terms of Use</a><a href="mailto:${supportEmail}">Contact support</a></div>
   <p class="contact"><strong>Developer:</strong> Wagune Creatives<br><strong>Support &amp; Privacy:</strong> <a href="mailto:${supportEmail}">${supportEmail}</a></p>
 </main>
 <script>
@@ -220,7 +220,53 @@ const privacyPolicyPage = `<!doctype html>
   <p>MTAA SERVICES is a general service marketplace and is not designed for children under 13. We do not knowingly collect personal information from children under 13.</p>
   <h2>Contact</h2>
   <p><strong>Developer:</strong> Wagune Creatives<br><strong>App:</strong> MTAA SERVICES<br><strong>Support &amp; Privacy:</strong> <a href="mailto:${supportEmail}">${supportEmail}</a></p>
-  <p><a href="?view=account-deletion">Request account deletion</a></p>
+  <p><a href="?view=account-deletion">Request account deletion</a> · <a href="?view=terms-of-use">Terms of Use and User Policy</a></p>
+</main>
+</body>
+</html>`;
+
+const userPolicyPage = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123f76">
+  <title>MTAA SERVICES Terms of Use and User Policy</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#14243a;background:#f3f6fb}
+    body{margin:0;padding:24px;min-height:100vh;box-sizing:border-box;display:grid;place-items:start center}
+    main{box-sizing:border-box;width:min(100%,760px);margin:24px auto;padding:28px;background:#fff;border:1px solid #dce5f0;border-radius:20px;box-shadow:0 12px 40px #17365d12}
+    h1{font-size:1.55rem;margin:0 0 12px}h2{font-size:1.15rem;margin-top:24px}
+    p,li{line-height:1.65;color:#41516a}ul{padding-left:22px}
+    a{color:#1769aa}
+  </style>
+</head>
+<body>
+<main>
+  <h1>MTAA SERVICES Terms of Use and User Policy</h1>
+  <p><strong>Effective date: November 4, 2026 · Version 2026-11-04</strong></p>
+  <p>These terms apply when you use MTAA SERVICES, a marketplace operated by Wagune Creatives to help customers find local service providers. By creating an account or continuing to use the app after accepting this policy, you agree to these terms.</p>
+  <h2>Marketplace use</h2>
+  <p>Provide accurate account, service, and request information. Use the marketplace only for lawful service-related purposes. You are responsible for your account, communications, and decisions when arranging or performing services. MTAA SERVICES helps people connect; unless we expressly say otherwise, we are not a party to agreements between customers and providers and do not guarantee a user's identity, qualifications, work, availability, or outcome.</p>
+  <h2>Content and conduct rules</h2>
+  <p>Content includes profiles, business listings, service requests, photos, messages, reviews, and reports. You may post content only if you have the rights and permissions needed to share it. Do not post or send content that:</p>
+  <ul>
+    <li>Is unlawful, fraudulent, deceptive, materially misleading, or impersonates another person or business.</li>
+    <li>Threatens, harasses, bullies, discriminates against, or exploits another person.</li>
+    <li>Contains sexual exploitation, child endangerment, or other prohibited harmful material.</li>
+    <li>Reveals another person's private, confidential, or sensitive information without permission.</li>
+    <li>Is spam, malware, an unsolicited promotion, or unrelated to the marketplace service.</li>
+    <li>Infringes another person's intellectual property or other legal rights.</li>
+  </ul>
+  <h2>Reporting, blocking, and moderation</h2>
+  <p>Use the in-app reporting tools to flag content or conduct that may break these rules, and use blocking tools to stop unwanted marketplace interactions. We review reports and may remove or restrict content, limit features, suspend accounts, or take other appropriate action. We may preserve or disclose information when reasonably necessary to protect users, investigate abuse, comply with law, or enforce these terms. We do not guarantee that every report will result in removal or other action.</p>
+  <h2>Your content</h2>
+  <p>You retain ownership of content you submit. You give Wagune Creatives a non-exclusive, worldwide, royalty-free license to host, store, reproduce, display, and share that content as needed to operate, secure, and improve the marketplace and show it to the people you choose to interact with. This license ends when the content is deleted, except where retention is needed for legal obligations, disputes, security, or backups. You can request account and associated data deletion through the app or the <a href="?view=account-deletion">account deletion page</a>; our <a href="?view=privacy-policy">Privacy Policy</a> explains retention and exceptions.</p>
+  <h2>Account and service changes</h2>
+  <p>Keep your sign-in details secure and notify us if you believe your account is being misused. You may stop using the service and request account deletion at any time, subject to limited retention or a delay needed to resolve an active dispute. We may change or discontinue features and may restrict access when needed to protect users, comply with law, or enforce these terms.</p>
+  <h2>Contact</h2>
+  <p>Questions or safety concerns? Contact Wagune Creatives at <a href="mailto:${supportEmail}">${supportEmail}</a>.</p>
+  <p><a href="?view=privacy-policy">Privacy Policy</a> · <a href="?view=account-deletion">Request account deletion</a></p>
 </main>
 </body>
 </html>`;
@@ -315,9 +361,12 @@ Deno.serve(async (request) => {
   });
 
   if (request.method === "GET") {
-    const page = new URL(request.url).searchParams.get("view") === "privacy-policy"
+    const view = new URL(request.url).searchParams.get("view");
+    const page = view === "privacy-policy"
       ? privacyPolicyPage
-      : accountDeletionPage;
+      : view === "terms-of-use"
+        ? userPolicyPage
+        : accountDeletionPage;
     return new Response(page, {
       headers: {
         ...corsHeaders,

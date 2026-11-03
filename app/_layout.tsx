@@ -1,11 +1,11 @@
 
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import { router, Stack } from "expo-router";
+import { router, Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import type { Notification } from "expo-notifications";
 
-import { AuthProvider } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { RequestDraftProvider } from "../contexts/RequestDraftContext";
 import { getNotifications } from "../lib/notificationsModule";
 import { supabase } from "../lib/supabase";
@@ -177,6 +177,25 @@ function NotificationNavigation() {
   return null;
 }
 
+function UserPolicyGate() {
+  const { user, loading, userPolicyAccepted, userPolicyAcceptanceChecked } = useAuth();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (
+      !loading &&
+      user &&
+      userPolicyAcceptanceChecked &&
+      !userPolicyAccepted &&
+      pathname !== "/user-policy-acceptance"
+    ) {
+      router.replace("/user-policy-acceptance");
+    }
+  }, [loading, pathname, user, userPolicyAccepted, userPolicyAcceptanceChecked]);
+
+  return null;
+}
+
 /**
  * Application root layout.
  */
@@ -185,12 +204,14 @@ export default function RootLayout() {
     <AuthProvider>
       <RequestDraftProvider>
         <NotificationNavigation />
+        <UserPolicyGate />
 
         <StatusBar style="auto" />
 
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="account-review" />
+          <Stack.Screen name="user-policy-acceptance" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(customer)" />
           <Stack.Screen name="(provider)" />

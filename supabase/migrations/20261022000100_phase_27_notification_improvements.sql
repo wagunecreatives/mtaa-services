@@ -13,7 +13,7 @@ begin
     into recipient,category_name,area_name
   from public.service_requests sr
   join public.service_categories sc on sc.id=sr.category_id
-  where sr.id=new.request_id;a
+  where sr.id=new.request_id;
   if recipient is null then return new; end if;
 
   provider_label:=case lower(coalesce(category_name,''))
